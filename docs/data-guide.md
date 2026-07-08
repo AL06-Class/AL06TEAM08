@@ -86,6 +86,9 @@
 - `interviewQuestions`: 면접 질문
 - `evaluations`: 면접 평가
 - `evaluationCriteria`: 평가 기준
+- `bloggerCampaigns`: 체험단 캠페인
+- `campaignApplications`: 체험단 캠페인 신청
+- `bloggerProfiles`: 블로거 프로필
 
 ### 공통 필드 이름
 
@@ -100,9 +103,14 @@
 - `interviewId`: 면접 식별자
 - `conversationId`: 일정 조율 대화 식별자
 - `questionSetId`: 질문 세트 식별자
+- `campaignId`: 체험단 캠페인 식별자
 - `status`: 상태값
 - `title`: 제목
 - `description`: 설명
+- `brandName`: 브랜드명
+- `category`: 카테고리
+- `region`: 지역
+- `imageUrl`: 이미지 URL
 - `startedAt`: 시작 시각
 - `endedAt`: 종료 시각
 - `scheduledAt`: 확정 시각
@@ -143,6 +151,14 @@
 - UX/UI 개선 작업은 기본적으로 새 DB 이름을 만들지 않습니다.
 - 화면 상태 저장이나 사용자 피드백 데이터가 필요할 때만 공통 이름 사전에 추가합니다.
 
+#### 체험단 캠페인
+
+- `reward`: 제공 내역 또는 보상
+- `dueDate`: 화면 표시용 마감일
+- `applicantCount`: 신청자 수
+- `recruitmentCount`: 모집 인원
+- `platform`: 리뷰 발행 채널
+- `featured`: 추천 또는 프리미엄 노출 여부
 ### 역할 값
 
 - `candidate`: 지원자
