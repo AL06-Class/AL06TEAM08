@@ -264,8 +264,8 @@ export default function App() {
           >
             메뉴
           </button>
-          <a className="logo" href="#top" aria-label="BLOGLE 홈">
-            BLOGLE
+          <a className="logo" href="#top" aria-label="줄서 홈">
+            줄서
           </a>
           <label className="search-box">
             <span>검색</span>
