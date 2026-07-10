@@ -80,10 +80,18 @@ input {
 }
 
 .logo {
-  color: #111827;
-  font-size: 28px;
-  font-weight: 950;
-  letter-spacing: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 118px;
+  height: 48px;
+}
+
+.logo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .search-box {
@@ -624,7 +632,8 @@ input {
   }
 
   .logo {
-    font-size: 24px;
+    width: 98px;
+    height: 42px;
   }
 
   .search-box {

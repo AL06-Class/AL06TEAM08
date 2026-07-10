@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import "./App.css";
+import julseoLogo from "./assets/julseo-logo.png";
 
 type Campaign = {
   id: number;
@@ -328,7 +329,7 @@ export default function App() {
             메뉴
           </button>
           <a className="logo" href="#top" aria-label="줄서 홈">
-            줄서
+            <img className="logo-image" src={julseoLogo} alt="줄서" />
           </a>
           <label className="search-box">
             <span>검색</span>
