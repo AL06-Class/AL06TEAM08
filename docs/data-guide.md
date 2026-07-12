@@ -52,6 +52,7 @@
 
 - `users`: 유저
 - `companies`: 광고주 또는 오프라인 매장
+- `ownerCampaignDrafts`: 사장님 체험단 모집 등록 초안
 - `bloggerProfiles`: 블로거 프로필
 - `bloggerCampaigns`: 체험단 캠페인
 - `reservationSlots`: 예약 가능 시간대
@@ -75,19 +76,27 @@
 - `title`: 제목
 - `description`: 설명
 - `brandName`: 브랜드명 또는 매장명
+- `storeName`: 사장님 등록 폼의 매장명
+- `ownerName`: 사장님 성함
+- `phone`: 사장님 연락처
 - `category`: 카테고리
 - `region`: 지역
 - `platform`: 리뷰 발행 채널
 - `imageUrl`: 이미지 URL
 - `reward`: 제공 내역 또는 보상
+- `offer`: 사장님이 입력한 제공 내역
 - `dueDate`: 화면 표시용 마감일
 - `applicantCount`: 신청자 수
 - `recruitmentCount`: 모집 인원
 - `quietTimeSlot`: 한산 시간대
 - `reservationStatus`: 예약 연동 상태
+- `reservationProvider`: 예약 연동 서비스명
 - `verificationMethod`: 방문 인증 방식
 - `reviewReminderPolicy`: 후기 회수 또는 리마인드 기준
 - `pricingHypothesis`: 가격 가설
+- `campaignGoal`: 캠페인 목표
+- `matchingPreference`: 선호 체험단 기준
+- `autoRegistrationEnabled`: 시간대 분석 후 자동 등록 사용 여부
 - `featured`: 추천 또는 프리미엄 노출 여부
 - `tags`: 태그 목록
 - `source`: 생성 또는 판단 근거
@@ -104,11 +113,14 @@
 
 - `draft`: 초안
 - `submitted`: 제출됨
+- `autoRegistered`: 자동 등록됨
 - `pending`: 대기 중
 - `approved`: 승인됨
 - `declined`: 거절됨
 - `selected`: 선정됨
+- `matched`: AI 매칭됨
 - `reserved`: 예약됨
+- `checkInPending`: 체크인 대기 중
 - `checkedIn`: 방문 인증됨
 - `reminded`: 리마인드 발송됨
 - `published`: 발행됨
@@ -132,6 +144,26 @@
 - `brandName`
 - `description`
 - `region`
+- `createdAt`
+- `updatedAt`
+
+### ownerCampaignDrafts
+
+- `id`
+- `companyId`
+- `storeName`
+- `ownerName`
+- `phone`
+- `category`
+- `region`
+- `quietTimeSlot`
+- `offer`
+- `recruitmentCount`
+- `reservationProvider`
+- `campaignGoal`
+- `matchingPreference`
+- `autoRegistrationEnabled`
+- `status`
 - `createdAt`
 - `updatedAt`
 
@@ -232,7 +264,7 @@
 
 ## 최종 결정
 
-- 주요 컬렉션: `users`, `companies`, `bloggerProfiles`, `bloggerCampaigns`, `reservationSlots`, `campaignApplications`, `visitCheckIns`, `campaignReviews`, `reviewReminders`
+- 주요 컬렉션: `users`, `companies`, `ownerCampaignDrafts`, `bloggerProfiles`, `bloggerCampaigns`, `reservationSlots`, `campaignApplications`, `visitCheckIns`, `campaignReviews`, `reviewReminders`
 - 역할 기준: 기존 레포 역할 값 유지, 줄서 맥락으로 해석
 - 필드명 규칙: 영어 `camelCase`
 - 상태값 기준: 자유 텍스트가 아니라 정해진 값만 사용
@@ -244,3 +276,4 @@
 
 - 2026-07-08: 기존 다른 아이템 데이터 기준을 제거하고 줄서 체험단 캠페인 데이터 기준으로 정리
 - 2026-07-10: 제품 기획 워크시트 기준으로 예약 슬롯, QR·GPS 방문 인증, 후기 리마인드 데이터 기준 보강
+- 2026-07-10: 사장님 체험단 모집 등록 폼 기준으로 `ownerCampaignDrafts`, 자동 등록, AI 매칭, 체크인 대기 상태값 보강

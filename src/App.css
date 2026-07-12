@@ -17,8 +17,14 @@ a {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+button {
+  border: 0;
 }
 
 .app {
@@ -206,7 +212,6 @@ input {
   line-height: 1.5;
 }
 
-
 .mvp-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -266,7 +271,6 @@ input {
   display: grid;
   justify-items: center;
   gap: 10px;
-  border: 0;
   background: transparent;
   color: #334155;
   font-size: 13px;
@@ -548,7 +552,6 @@ input {
 }
 
 .primary-action {
-  border: 0;
   background: #0b57d0;
   color: #ffffff;
 }
@@ -577,24 +580,415 @@ input {
   bottom: 20px;
   z-index: 10;
   display: grid;
-  gap: 4px;
-  max-width: 248px;
-  padding: 14px 16px;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  max-width: 322px;
+  padding: 13px 15px;
   border: 1px solid rgba(23, 32, 42, 0.12);
   border-radius: 8px;
   background: #17202a;
   color: #ffffff;
+  text-align: left;
   box-shadow: 0 16px 34px rgba(23, 32, 42, 0.24);
+  cursor: pointer;
+}
+
+.floating-contact:hover,
+.floating-contact:focus-visible {
+  outline: 3px solid rgba(11, 87, 208, 0.28);
+}
+
+.floating-contact-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.floating-contact-icon img {
+  width: 42px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.floating-contact-copy {
+  display: grid;
+  gap: 4px;
 }
 
 .floating-contact strong {
   font-size: 14px;
 }
 
-.floating-contact span {
+.floating-contact span span {
   color: rgba(255, 255, 255, 0.78);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.floating-contact em {
+  color: #8fc4ff;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.owner-page {
+  padding-bottom: 72px;
+}
+
+.owner-notice {
+  max-width: 1180px;
+}
+
+.owner-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid #d9e2f3;
+}
+
+.owner-logo-button {
+  width: 118px;
+  height: 48px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.owner-header p,
+.owner-form-heading p,
+.process-heading p {
+  margin: 0 0 6px;
+  color: #0b57d0;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.owner-header h1 {
+  margin: 0;
+  color: #17202a;
+  font-size: 24px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.owner-home-button {
+  width: auto;
+  min-width: 142px;
+  margin-top: 0;
+  padding: 0 16px;
+}
+
+.owner-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 22px;
+  max-width: 1180px;
+  margin: 24px auto 0;
+  padding: 0 20px;
+}
+
+.owner-form,
+.owner-process {
+  border: 1px solid #d9e2f3;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 28px rgba(23, 32, 42, 0.06);
+}
+
+.owner-form {
+  display: grid;
+  gap: 22px;
+  padding: 24px;
+}
+
+.owner-form-heading {
+  display: grid;
+  gap: 7px;
+}
+
+.owner-form-heading h2,
+.process-heading h2 {
+  margin: 0;
+  color: #17202a;
+  font-size: 22px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.owner-form-heading span,
+.process-heading span {
+  color: #52606d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.form-section {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form-section legend {
+  margin-bottom: 12px;
+  color: #17202a;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.form-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.form-field span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d9e2f3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17202a;
+  outline: 0;
+}
+
+.form-field input,
+.form-field select {
+  height: 44px;
+  padding: 0 12px;
+}
+
+.form-field textarea {
+  min-height: 92px;
+  resize: vertical;
+  padding: 12px;
+  line-height: 1.5;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: #0b57d0;
+  box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.12);
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.toggle-field {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid #d9e2f3;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #17202a;
+}
+
+.toggle-field input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #0b57d0;
+}
+
+.toggle-field span {
+  display: grid;
+  gap: 4px;
+}
+
+.toggle-field strong {
+  font-size: 14px;
+}
+
+.toggle-field small {
+  color: #52606d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.verification-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.verification-strip span {
+  min-height: 42px;
+  padding: 10px 8px;
+  border: 1px solid #d9e2f3;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.owner-submit {
+  height: 50px;
+}
+
+.registration-result {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid #99d6bc;
+  border-radius: 8px;
+  background: #effaf4;
+  color: #18794e;
+}
+
+.registration-result strong {
+  font-size: 14px;
+}
+
+.registration-result p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.owner-process {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.process-heading {
+  display: grid;
+  gap: 7px;
+}
+
+.process-lane {
+  display: grid;
+  gap: 10px;
+}
+
+.process-step {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #d9e2f3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.process-step > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 28px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #0b57d0;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.process-step h3 {
+  margin: 0 0 5px;
+  color: #17202a;
+  font-size: 14px;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.process-step p {
+  margin: 0;
+  color: #52606d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.process-step.is-automation {
+  border-color: #d87961;
+  background: #fff4ef;
+}
+
+.process-step.is-owner {
+  border-color: #d89b45;
+  background: #fff8eb;
+}
+
+.process-step.is-external {
+  border-color: #78aee8;
+  background: #f0f7ff;
+}
+
+.process-step.is-complete {
+  border-color: #72b79a;
+  background: #effaf4;
+}
+
+.process-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.process-legend span {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.legend-automation {
+  border: 1px solid #d87961;
+  color: #9d3f28;
+  background: #fff4ef;
+}
+
+.legend-owner {
+  border: 1px solid #d89b45;
+  color: #875400;
+  background: #fff8eb;
+}
+
+.legend-external {
+  border: 1px solid #78aee8;
+  color: #0b57d0;
+  background: #f0f7ff;
+}
+
+.legend-complete {
+  border: 1px solid #72b79a;
+  color: #18794e;
+  background: #effaf4;
 }
 
 @media (max-width: 1040px) {
@@ -604,11 +998,13 @@ input {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .workbench {
+  .workbench,
+  .owner-workspace {
     grid-template-columns: 1fr;
   }
 
-  .detail-panel {
+  .detail-panel,
+  .owner-process {
     position: static;
   }
 }
@@ -671,7 +1067,8 @@ input {
   .hero-grid,
   .mvp-summary,
   .category-strip,
-  .workbench {
+  .workbench,
+  .owner-workspace {
     padding-right: 16px;
     padding-left: 16px;
   }
@@ -682,7 +1079,6 @@ input {
   }
 
   .category-strip {
-
     grid-template-columns: repeat(5, minmax(58px, 1fr));
     gap: 12px 8px;
   }
@@ -702,5 +1098,31 @@ input {
     right: 14px;
     bottom: 14px;
     max-width: calc(100vw - 28px);
+  }
+
+  .owner-header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .owner-logo-button {
+    width: 98px;
+    height: 42px;
+  }
+
+  .owner-home-button {
+    width: 100%;
+  }
+
+  .owner-form,
+  .owner-process {
+    padding: 18px;
+  }
+
+  .field-grid,
+  .verification-strip,
+  .process-legend {
+    grid-template-columns: 1fr;
   }
 }

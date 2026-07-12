@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import "./App.css";
 import julseoLogo from "./assets/julseo-logo.png";
 
@@ -27,6 +28,23 @@ type Category = {
   label: string;
   value: string;
   imageUrl: string;
+};
+
+type ViewMode = "home" | "ownerRegistration";
+
+type OwnerCampaignForm = {
+  storeName: string;
+  ownerName: string;
+  phone: string;
+  category: string;
+  region: string;
+  quietTimeSlot: string;
+  offer: string;
+  recruitmentCount: string;
+  reservationProvider: string;
+  campaignGoal: string;
+  matchingPreference: string;
+  autoRegistrationEnabled: boolean;
 };
 
 const heroBanners = [
@@ -266,12 +284,79 @@ const platformLabels: Record<Campaign["platform"], string> = {
   youtube: "YT"
 };
 
+const ownerInitialForm: OwnerCampaignForm = {
+  storeName: "",
+  ownerName: "",
+  phone: "",
+  category: "카페",
+  region: "",
+  quietTimeSlot: "평일 14:00~17:00",
+  offer: "",
+  recruitmentCount: "10",
+  reservationProvider: "네이버예약",
+  campaignGoal: "한산 시간대 방문 후기 확보",
+  matchingPreference: "방문 후기 성실도가 높은 블로거",
+  autoRegistrationEnabled: true
+};
+
+const ownerProcessSteps = [
+  {
+    label: "사장님 의뢰",
+    detail: "매장 정보와 원하는 방문 시간대를 입력합니다.",
+    tone: "owner"
+  },
+  {
+    label: "매장 등록",
+    detail: "지역, 카테고리, 제공 내역을 캠페인 초안으로 정리합니다.",
+    tone: "external"
+  },
+  {
+    label: "시간대 분석",
+    detail: "한산 시간대와 예약 슬롯 기준으로 모집 조건을 추천합니다.",
+    tone: "automation"
+  },
+  {
+    label: "자동 등록",
+    detail: "자동 등록을 켜면 조건에 맞는 캠페인 문안을 생성합니다.",
+    tone: "automation"
+  },
+  {
+    label: "추천 수신",
+    detail: "AI 매칭으로 체험단 후보를 추천받습니다.",
+    tone: "automation"
+  },
+  {
+    label: "최종 선택",
+    detail: "사장님이 방문자를 직접 확정합니다.",
+    tone: "owner"
+  },
+  {
+    label: "체크인 확인",
+    detail: "QR·GPS로 실제 방문을 확인합니다.",
+    tone: "external"
+  },
+  {
+    label: "체험 완료",
+    detail: "리마인드 발송 후 신뢰 후기를 회수합니다.",
+    tone: "complete"
+  }
+] as const;
+
+const getViewFromHash = (): ViewMode =>
+  typeof window !== "undefined" && window.location.hash === "#owner-registration"
+    ? "ownerRegistration"
+    : "home";
+
 export default function App() {
+  const [currentView, setCurrentView] = useState<ViewMode>(getViewFromHash);
   const [query, setQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("전체");
   const [selectedCampaignId, setSelectedCampaignId] = useState(campaigns[0].id);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
+  const [ownerForm, setOwnerForm] = useState<OwnerCampaignForm>(ownerInitialForm);
+  const [submittedOwnerCampaign, setSubmittedOwnerCampaign] =
+    useState<OwnerCampaignForm | null>(null);
 
   const visibleCampaigns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -305,11 +390,280 @@ export default function App() {
   const selectedCampaign =
     campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? campaigns[0];
 
+  useEffect(() => {
+    const handleHashChange = () => setCurrentView(getViewFromHash());
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  const openOwnerRegistration = () => {
+    setCurrentView("ownerRegistration");
+    setSubmittedOwnerCampaign(null);
+    window.location.hash = "owner-registration";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goHome = () => {
+    setCurrentView("home");
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleOwnerInputChange = <Field extends keyof OwnerCampaignForm>(
+    field: Field,
+    value: OwnerCampaignForm[Field]
+  ) => {
+    setOwnerForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleOwnerSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmittedOwnerCampaign(ownerForm);
+  };
+
   const handleApply = () => {
     setApplicationMessage(
       `${selectedCampaign.brandName} 캠페인 신청 준비가 완료되었습니다.`
     );
   };
+
+  if (currentView === "ownerRegistration") {
+    return (
+      <main className="app owner-page">
+        <div className="notice-bar owner-notice">
+          <span>사장님 등록</span>
+          <strong>매장 등록부터 자동 등록, AI 추천, QR 체크인까지 한 화면에서 설계합니다.</strong>
+        </div>
+
+        <header className="owner-header">
+          <button className="owner-logo-button" type="button" onClick={goHome}>
+            <img className="logo-image" src={julseoLogo} alt="줄서" />
+          </button>
+          <div>
+            <p>체험단 모집 SaaS</p>
+            <h1>사장님 체험단 모집 등록</h1>
+          </div>
+          <button className="secondary-action owner-home-button" type="button" onClick={goHome}>
+            메인으로 돌아가기
+          </button>
+        </header>
+
+        <section className="owner-workspace" aria-label="사장님 체험단 모집 등록 화면">
+          <form className="owner-form" onSubmit={handleOwnerSubmit}>
+            <div className="owner-form-heading">
+              <p>01 사장님 의뢰</p>
+              <h2>매장과 모집 조건을 입력하세요</h2>
+              <span>제출 후에는 시간대 분석, 자동 등록, AI 매칭 후보 추천 순서로 이어집니다.</span>
+            </div>
+
+            <fieldset className="form-section">
+              <legend>매장 등록</legend>
+              <div className="field-grid">
+                <label className="form-field">
+                  <span>매장명</span>
+                  <input
+                    required
+                    type="text"
+                    value={ownerForm.storeName}
+                    onChange={(event) => handleOwnerInputChange("storeName", event.target.value)}
+                    placeholder="예: 오브서울 성수점"
+                  />
+                </label>
+                <label className="form-field">
+                  <span>사장님 성함</span>
+                  <input
+                    required
+                    type="text"
+                    value={ownerForm.ownerName}
+                    onChange={(event) => handleOwnerInputChange("ownerName", event.target.value)}
+                    placeholder="예: 김줄서"
+                  />
+                </label>
+                <label className="form-field">
+                  <span>연락처</span>
+                  <input
+                    required
+                    type="tel"
+                    value={ownerForm.phone}
+                    onChange={(event) => handleOwnerInputChange("phone", event.target.value)}
+                    placeholder="010-0000-0000"
+                  />
+                </label>
+                <label className="form-field">
+                  <span>지역</span>
+                  <input
+                    required
+                    type="text"
+                    value={ownerForm.region}
+                    onChange={(event) => handleOwnerInputChange("region", event.target.value)}
+                    placeholder="예: 서울 성동구"
+                  />
+                </label>
+                <label className="form-field">
+                  <span>카테고리</span>
+                  <select
+                    value={ownerForm.category}
+                    onChange={(event) => handleOwnerInputChange("category", event.target.value)}
+                  >
+                    {["카페", "맛집", "액티비티", "문화", "팝업", "뷰티"].map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form-field">
+                  <span>예약 연동</span>
+                  <select
+                    value={ownerForm.reservationProvider}
+                    onChange={(event) =>
+                      handleOwnerInputChange("reservationProvider", event.target.value)
+                    }
+                  >
+                    {["네이버예약", "캐치테이블", "수동 슬롯", "추후 연동"].map((provider) => (
+                      <option key={provider} value={provider}>
+                        {provider}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset className="form-section">
+              <legend>캠페인 알림과 자동 등록</legend>
+              <div className="field-grid">
+                <label className="form-field">
+                  <span>한산 시간대</span>
+                  <input
+                    required
+                    type="text"
+                    value={ownerForm.quietTimeSlot}
+                    onChange={(event) =>
+                      handleOwnerInputChange("quietTimeSlot", event.target.value)
+                    }
+                    placeholder="예: 평일 14:00~17:00"
+                  />
+                </label>
+                <label className="form-field">
+                  <span>모집 인원</span>
+                  <input
+                    required
+                    min="1"
+                    type="number"
+                    value={ownerForm.recruitmentCount}
+                    onChange={(event) =>
+                      handleOwnerInputChange("recruitmentCount", event.target.value)
+                    }
+                  />
+                </label>
+                <label className="form-field field-wide">
+                  <span>제공 내역</span>
+                  <input
+                    required
+                    type="text"
+                    value={ownerForm.offer}
+                    onChange={(event) => handleOwnerInputChange("offer", event.target.value)}
+                    placeholder="예: 2인 식사권 7만원 / 음료 2잔 + 디저트"
+                  />
+                </label>
+                <label className="form-field field-wide">
+                  <span>캠페인 목표</span>
+                  <textarea
+                    required
+                    value={ownerForm.campaignGoal}
+                    onChange={(event) =>
+                      handleOwnerInputChange("campaignGoal", event.target.value)
+                    }
+                    placeholder="예: 평일 오후 빈 좌석을 채우고 네이버 블로그 후기를 확보하고 싶어요."
+                  />
+                </label>
+              </div>
+              <label className="toggle-field">
+                <input
+                  type="checkbox"
+                  checked={ownerForm.autoRegistrationEnabled}
+                  onChange={(event) =>
+                    handleOwnerInputChange("autoRegistrationEnabled", event.target.checked)
+                  }
+                />
+                <span>
+                  <strong>시간대 분석 후 자동 등록 사용</strong>
+                  <small>조건을 기준으로 캠페인 문안과 슬롯을 자동으로 구성합니다.</small>
+                </span>
+              </label>
+            </fieldset>
+
+            <fieldset className="form-section">
+              <legend>AI 매칭과 노쇼 방지</legend>
+              <label className="form-field field-wide">
+                <span>선호 체험단 기준</span>
+                <textarea
+                  value={ownerForm.matchingPreference}
+                  onChange={(event) =>
+                    handleOwnerInputChange("matchingPreference", event.target.value)
+                  }
+                  placeholder="예: 방문 약속을 잘 지키고 사진 후기가 깔끔한 블로거"
+                />
+              </label>
+              <div className="verification-strip" aria-label="등록 후 검증 프로세스">
+                <span>추천 수신</span>
+                <span>최종 선택</span>
+                <span>QR·GPS 체크인</span>
+                <span>리마인드 발송</span>
+                <span>신뢰 후기</span>
+              </div>
+            </fieldset>
+
+            <button className="primary-action owner-submit" type="submit">
+              체험단 모집 등록하기
+            </button>
+
+            {submittedOwnerCampaign ? (
+              <div className="registration-result" role="status">
+                <strong>
+                  {submittedOwnerCampaign.storeName || "신규 매장"} 캠페인 등록 초안이 생성되었습니다.
+                </strong>
+                <p>
+                  다음 단계는 시간대 분석, 자동 등록, AI 추천 수신, 사장님 최종 선택,
+                  QR 체크인 확인 순서입니다.
+                </p>
+              </div>
+            ) : null}
+          </form>
+
+          <aside className="owner-process" aria-label="실제 체험단 프로세스">
+            <div className="process-heading">
+              <p>실제 체험단 프로세스</p>
+              <h2>체험단 매칭 플랫폼 대시보드</h2>
+              <span>첨부해주신 흐름을 사장님이 등록 중 바로 이해할 수 있게 정리했습니다.</span>
+            </div>
+            <div className="process-lane">
+              {ownerProcessSteps.map((step, index) => (
+                <article className={`process-step is-${step.tone}`} key={step.label}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h3>{step.label}</h3>
+                    <p>{step.detail}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="process-legend" aria-label="프로세스 색상 설명">
+              <span className="legend-automation">자동화 필요</span>
+              <span className="legend-owner">사장님 결정</span>
+              <span className="legend-external">외부 연동</span>
+              <span className="legend-complete">완료</span>
+            </div>
+          </aside>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="app">
@@ -508,7 +862,7 @@ export default function App() {
             <button className="primary-action" type="button" onClick={handleApply}>
               캠페인 신청하기
             </button>
-            <button className="secondary-action" type="button">
+            <button className="secondary-action" type="button" onClick={openOwnerRegistration}>
               매장 캠페인 등록 문의
             </button>
             {applicationMessage ? (
@@ -520,10 +874,21 @@ export default function App() {
         </aside>
       </section>
 
-      <aside className="floating-contact" aria-label="광고주 상담">
-        <strong>사장님이신가요?</strong>
-        <span>한산 시간대·예약 슬롯·QR 체크인 캠페인을 함께 설계해드려요.</span>
-      </aside>
+      <button
+        className="floating-contact"
+        type="button"
+        aria-label="사장님 체험단 모집 등록하기"
+        onClick={openOwnerRegistration}
+      >
+        <span className="floating-contact-icon" aria-hidden="true">
+          <img src={julseoLogo} alt="" />
+        </span>
+        <span className="floating-contact-copy">
+          <strong>사장님이신가요?</strong>
+          <span>한산 시간대·예약 슬롯·QR 체크인 캠페인을 직접 등록해보세요.</span>
+          <em>모집 등록하기</em>
+        </span>
+      </button>
     </main>
   );
 }
