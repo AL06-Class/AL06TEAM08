@@ -1,0 +1,17 @@
+services:
+  web:
+    image: node:22
+    working_dir: /app
+    tty: true
+    stdin_open: true
+    ports:
+      - "5173:5173"
+      - "9005:9005"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: >
+      sh -c "if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run dev"
+
+volumes:
+  node_modules:
