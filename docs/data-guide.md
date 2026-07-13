@@ -93,6 +93,10 @@
 - `reservationProvider`: 예약 연동 서비스명
 - `verificationMethod`: 방문 인증 방식
 - `reviewReminderPolicy`: 후기 회수 또는 리마인드 기준
+- `reviewerName`: 후기 작성 대상 체험단 표시 이름
+- `reviewDueDate`: 후기 제출 마감일
+- `reminderCount`: 후기 리마인드 발송 횟수
+- `lastReminderAt`: 마지막 후기 리마인드 발송 시각
 - `pricingHypothesis`: 가격 가설
 - `campaignGoal`: 캠페인 목표
 - `matchingPreference`: 선호 체험단 기준
@@ -247,6 +251,8 @@
 - `userId`
 - `platform`
 - `source`
+- `reviewerName`
+- `reviewDueDate`
 - `status`
 - `createdAt`
 - `updatedAt`
@@ -258,6 +264,8 @@
 - `applicationId`
 - `reviewId`
 - `reviewReminderPolicy`
+- `reminderCount`
+- `lastReminderAt`
 - `status`
 - `createdAt`
 - `updatedAt`
@@ -277,3 +285,4 @@
 - 2026-07-08: 기존 다른 아이템 데이터 기준을 제거하고 줄서 체험단 캠페인 데이터 기준으로 정리
 - 2026-07-10: 제품 기획 워크시트 기준으로 예약 슬롯, QR·GPS 방문 인증, 후기 리마인드 데이터 기준 보강
 - 2026-07-10: 사장님 체험단 모집 등록 폼 기준으로 `ownerCampaignDrafts`, 자동 등록, AI 매칭, 체크인 대기 상태값 보강
+- 2026-07-13: 후기회수 관리 화면 기준으로 후기 작성자, 제출 마감일, 리마인드 횟수와 마지막 발송 시각 필드 보강

@@ -30,7 +30,7 @@ type Category = {
   imageUrl: string;
 };
 
-type ViewMode = "home" | "ownerRegistration";
+type ViewMode = "home" | "ownerRegistration" | "reviewRecovery";
 
 type OwnerCampaignForm = {
   storeName: string;
@@ -45,6 +45,21 @@ type OwnerCampaignForm = {
   campaignGoal: string;
   matchingPreference: string;
   autoRegistrationEnabled: boolean;
+};
+
+type ReviewRecoveryStatus = "checkedIn" | "reminded" | "published" | "completed";
+
+type ReviewRecoveryItem = {
+  id: number;
+  campaignId: number;
+  reviewerName: string;
+  platform: Campaign["platform"];
+  status: ReviewRecoveryStatus;
+  checkInAt: string;
+  reviewDueDate: string;
+  reminderCount: number;
+  lastReminderAt: string;
+  source: string;
 };
 
 const heroBanners = [
@@ -342,10 +357,90 @@ const ownerProcessSteps = [
   }
 ] as const;
 
-const getViewFromHash = (): ViewMode =>
-  typeof window !== "undefined" && window.location.hash === "#owner-registration"
-    ? "ownerRegistration"
-    : "home";
+const reviewRecoveryInitialItems: ReviewRecoveryItem[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    reviewerName: "성수기록",
+    platform: "blog",
+    status: "checkedIn",
+    checkInAt: "07.13 14:22",
+    reviewDueDate: "07.15 18:00",
+    reminderCount: 0,
+    lastReminderAt: "-",
+    source: "QR + GPS"
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    reviewerName: "오늘의테이블",
+    platform: "instagram",
+    status: "reminded",
+    checkInAt: "07.12 15:08",
+    reviewDueDate: "오늘 20:00",
+    reminderCount: 1,
+    lastReminderAt: "오늘 10:30",
+    source: "QR + GPS"
+  },
+  {
+    id: 3,
+    campaignId: 2,
+    reviewerName: "동명동산책",
+    platform: "instagram",
+    status: "published",
+    checkInAt: "07.11 16:11",
+    reviewDueDate: "07.13 18:00",
+    reminderCount: 1,
+    lastReminderAt: "07.12 09:00",
+    source: "매장 QR"
+  },
+  {
+    id: 4,
+    campaignId: 3,
+    reviewerName: "주말클라이머",
+    platform: "blog",
+    status: "completed",
+    checkInAt: "07.10 13:46",
+    reviewDueDate: "07.12 18:00",
+    reminderCount: 0,
+    lastReminderAt: "-",
+    source: "QR + 운영자 확인"
+  },
+  {
+    id: 5,
+    campaignId: 5,
+    reviewerName: "디저트로그",
+    platform: "blog",
+    status: "reminded",
+    checkInAt: "07.12 16:34",
+    reviewDueDate: "오늘 18:00",
+    reminderCount: 2,
+    lastReminderAt: "오늘 09:15",
+    source: "QR + GPS"
+  }
+];
+
+const reviewStatusLabels: Record<ReviewRecoveryStatus, string> = {
+  checkedIn: "후기 대기",
+  reminded: "리마인드 발송",
+  published: "발행 확인",
+  completed: "회수 완료"
+};
+
+const reviewFilters: Array<{ label: string; value: "all" | ReviewRecoveryStatus }> = [
+  { label: "전체", value: "all" },
+  { label: "후기 대기", value: "checkedIn" },
+  { label: "리마인드 발송", value: "reminded" },
+  { label: "발행 확인", value: "published" },
+  { label: "회수 완료", value: "completed" }
+];
+
+const getViewFromHash = (): ViewMode => {
+  if (typeof window === "undefined") return "home";
+  if (window.location.hash === "#owner-registration") return "ownerRegistration";
+  if (window.location.hash === "#review-recovery") return "reviewRecovery";
+  return "home";
+};
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewMode>(getViewFromHash);
@@ -357,6 +452,9 @@ export default function App() {
   const [ownerForm, setOwnerForm] = useState<OwnerCampaignForm>(ownerInitialForm);
   const [submittedOwnerCampaign, setSubmittedOwnerCampaign] =
     useState<OwnerCampaignForm | null>(null);
+  const [reviewItems, setReviewItems] = useState(reviewRecoveryInitialItems);
+  const [reviewFilter, setReviewFilter] =
+    useState<"all" | ReviewRecoveryStatus>("all");
 
   const visibleCampaigns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -390,6 +488,19 @@ export default function App() {
   const selectedCampaign =
     campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? campaigns[0];
 
+  const visibleReviewItems = reviewItems.filter(
+    (item) => reviewFilter === "all" || item.status === reviewFilter
+  );
+
+  const reviewSummary = {
+    checkedIn: reviewItems.length,
+    waiting: reviewItems.filter((item) => item.status === "checkedIn").length,
+    reminded: reviewItems.filter((item) => item.status === "reminded").length,
+    recovered: reviewItems.filter(
+      (item) => item.status === "published" || item.status === "completed"
+    ).length
+  };
+
   useEffect(() => {
     const handleHashChange = () => setCurrentView(getViewFromHash());
 
@@ -404,6 +515,13 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+
+  const openReviewRecovery = () => {
+    setCurrentView("reviewRecovery");
+    setIsMenuOpen(false);
+    window.location.hash = "review-recovery";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   const goHome = () => {
     setCurrentView("home");
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
@@ -431,7 +549,207 @@ export default function App() {
     );
   };
 
+  const sendReviewReminder = (reviewId: number) => {
+    setReviewItems((current) =>
+      current.map((item) =>
+        item.id === reviewId
+          ? {
+              ...item,
+              status: "reminded",
+              reminderCount: item.reminderCount + 1,
+              lastReminderAt: "방금 전"
+            }
+          : item
+      )
+    );
+  };
+
+  const completeReviewRecovery = (reviewId: number) => {
+    setReviewItems((current) =>
+      current.map((item) =>
+        item.id === reviewId ? { ...item, status: "completed" } : item
+      )
+    );
+  };
+
+  if (currentView === "reviewRecovery") {
+    return (
+      <main className="app review-page">
+        <div className="notice-bar review-notice">
+          <span>후기회수</span>
+          <strong>방문 인증된 체험단만 후기 요청과 리마인드를 관리합니다.</strong>
+        </div>
+
+        <header className="review-header">
+          <button className="owner-logo-button" type="button" onClick={goHome}>
+            <img className="logo-image" src={julseoLogo} alt="줄서" />
+          </button>
+          <div className="review-header-copy">
+            <p>방문 이후 운영</p>
+            <h1>후기회수 관리</h1>
+          </div>
+          <button className="secondary-action review-home-button" type="button" onClick={goHome}>
+            메인으로 돌아가기
+          </button>
+        </header>
+
+        <section className="review-workspace" aria-label="후기회수 관리 화면">
+          <div className="review-intro">
+            <div>
+              <p>오늘의 후기 운영</p>
+              <h2>방문은 확인됐고, 이제 신뢰 후기를 회수할 차례입니다</h2>
+              <span>체크인 이후 후기 요청부터 발행 확인까지 한곳에서 관리하세요.</span>
+            </div>
+            <div className="review-flow" aria-label="후기회수 진행 단계">
+              <span className="is-done">방문 인증</span>
+              <span>후기 요청</span>
+              <span>리마인드</span>
+              <span>발행 확인</span>
+            </div>
+          </div>
+
+          <div className="review-summary" aria-label="후기회수 요약">
+            <article>
+              <span>방문 인증</span>
+              <strong>{reviewSummary.checkedIn}</strong>
+              <small>후기 대상 체험단</small>
+            </article>
+            <article>
+              <span>후기 대기</span>
+              <strong>{reviewSummary.waiting}</strong>
+              <small>첫 요청이 필요해요</small>
+            </article>
+            <article>
+              <span>리마인드 중</span>
+              <strong>{reviewSummary.reminded}</strong>
+              <small>마감 전 확인 중</small>
+            </article>
+            <article className="is-success">
+              <span>회수 성과</span>
+              <strong>{reviewSummary.recovered}</strong>
+              <small>발행 또는 완료</small>
+            </article>
+          </div>
+
+          <section className="review-queue" aria-label="후기회수 대상 목록">
+            <div className="review-queue-heading">
+              <div>
+                <p>후기회수 목록</p>
+                <h2>체험단별 진행 상태</h2>
+              </div>
+              <span>{visibleReviewItems.length}명 표시</span>
+            </div>
+
+            <div className="review-filter-row" aria-label="후기 상태 필터">
+              {reviewFilters.map((filter) => (
+                <button
+                  className={reviewFilter === filter.value ? "is-active" : ""}
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setReviewFilter(filter.value)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="review-table-wrap">
+              <table className="review-table">
+                <thead>
+                  <tr>
+                    <th>체험단 / 캠페인</th>
+                    <th>방문 인증</th>
+                    <th>후기 마감</th>
+                    <th>리마인드</th>
+                    <th>상태</th>
+                    <th><span className="sr-only">관리</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleReviewItems.map((item) => {
+                    const campaign = campaigns.find((entry) => entry.id === item.campaignId);
+                    return (
+                      <tr key={item.id}>
+                        <td>
+                          <div className="reviewer-cell">
+                            <span>{platformLabels[item.platform]}</span>
+                            <div>
+                              <strong>{item.reviewerName}</strong>
+                              <small>{campaign?.brandName} · {campaign?.title}</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <strong>{item.checkInAt}</strong>
+                          <small>{item.source}</small>
+                        </td>
+                        <td><strong>{item.reviewDueDate}</strong></td>
+                        <td>
+                          <strong>{item.reminderCount}회</strong>
+                          <small>{item.lastReminderAt}</small>
+                        </td>
+                        <td>
+                          <span className={`review-status is-${item.status}`}>
+                            {reviewStatusLabels[item.status]}
+                          </span>
+                        </td>
+                        <td>
+                          {item.status === "published" ? (
+                            <button
+                              className="review-action is-complete"
+                              type="button"
+                              onClick={() => completeReviewRecovery(item.id)}
+                            >
+                              회수 완료
+                            </button>
+                          ) : item.status === "completed" ? (
+                            <span className="review-action-done">완료됨</span>
+                          ) : (
+                            <button
+                              className="review-action"
+                              type="button"
+                              onClick={() => sendReviewReminder(item.id)}
+                            >
+                              {item.status === "checkedIn" ? "후기 요청" : "다시 알림"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    );
+  }
+
   if (currentView === "ownerRegistration") {
+
+  const sendReviewReminder = (reviewId: number) => {
+    setReviewItems((current) =>
+      current.map((item) =>
+        item.id === reviewId
+          ? {
+              ...item,
+              status: "reminded",
+              reminderCount: item.reminderCount + 1,
+              lastReminderAt: "방금 전"
+            }
+          : item
+      )
+    );
+  };
+
+  const completeReviewRecovery = (reviewId: number) => {
+    setReviewItems((current) =>
+      current.map((item) =>
+        item.id === reviewId ? { ...item, status: "completed" } : item
+      )
+    );
+  };
     return (
       <main className="app owner-page">
         <div className="notice-bar owner-notice">
@@ -715,7 +1033,12 @@ export default function App() {
             "파일럿",
             "광고문의"
           ].map((item) => (
-            <a key={item} href={`#${item}`}>
+            <a
+              className={item === "후기회수" ? "review-nav-link" : ""}
+              key={item}
+              href={item === "후기회수" ? "#review-recovery" : `#${item}`}
+              onClick={item === "후기회수" ? openReviewRecovery : undefined}
+            >
               {item}
             </a>
           ))}
