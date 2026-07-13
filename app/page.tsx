@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Bell,
   CalendarDays,
   Check,
   ChevronDown,
@@ -11,16 +10,15 @@ import {
   Clock3,
   Link2,
   MapPin,
-  Menu,
   Plus,
   RefreshCw,
-  Search,
   Settings2,
   Store,
   Users,
   X,
 } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
+import { SiteHeader } from "@/components/SiteHeader";
 
 type SlotStatus = "available" | "almost" | "full";
 
@@ -53,8 +51,6 @@ const initialSlots: Slot[] = [
   { id: 6, date: "2026-07-15", time: "14:00", booked: 0, capacity: 4, status: "available", synced: true },
 ];
 
-const navItems = ["홈", "캠페인", "예약슬롯", "방문인증", "후기회수", "오늘오픈", "파일럿", "광고문의"];
-
 const statusText: Record<SlotStatus, string> = {
   available: "예약 가능",
   almost: "마감 임박",
@@ -68,7 +64,6 @@ export default function BookingSlotsPage() {
   const [selectedSlotId, setSelectedSlotId] = useState(2);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const visibleSlots = useMemo(
     () => slots.filter((slot) => slot.date === selectedDate && (filter === "all" || slot.status === filter)),
@@ -105,36 +100,7 @@ export default function BookingSlotsPage() {
 
   return (
     <main>
-      <div className="notice">공지사항&nbsp;&nbsp; 예약 연동 후 슬롯 현황이 자동으로 업데이트됩니다.</div>
-
-      <header className="siteHeader">
-        <div className="headerMain pageWidth">
-          <a className="logo" href="#" aria-label="줄서 홈">
-            <span>줄서</span>
-            <span className="logoMark"><i /><i /></span>
-          </a>
-          <div className="searchBox">
-            <Search size={17} aria-hidden="true" />
-            <input aria-label="검색" placeholder="매장, 지역, 한산 시간대" />
-          </div>
-          <div className="headerActions">
-            <button className="iconButton" aria-label="알림"><Bell size={19} /></button>
-            <button className="textButton">로그인</button>
-            <button className="textButton">회원가입</button>
-            <button className="inquiryButton">광고문의</button>
-          </div>
-          <button className="mobileMenuButton" aria-label="메뉴" onClick={() => setMobileMenuOpen((open) => !open)}>
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </div>
-        <nav className={mobileMenuOpen ? "mainNav mobileOpen" : "mainNav"} aria-label="주요 메뉴">
-          <div className="pageWidth navInner">
-            {navItems.map((item) => (
-              <a key={item} className={item === "예약슬롯" ? "active" : ""} href="#">{item}</a>
-            ))}
-          </div>
-        </nav>
-      </header>
+      <SiteHeader active="예약슬롯" notice="예약 연동 후 슬롯 현황이 자동으로 업데이트됩니다." />
 
       <section className="workspace pageWidth">
         <div className="titleRow">
