@@ -109,7 +109,7 @@
 
 ## 데이터 기준
 
-사장님 등록 화면은 추후 Firebase 연결 시 아래 데이터 구조로 이어지도록 정리했습니다.
+최신 `main`의 `docs/PRD.md`에 정의된 `stores`, `campaigns`, `applicants`, `visits`가 최종 DB 기준입니다. 아래 이름은 현재 프론트엔드 프로토타입에서 사용한 모델이며, Firebase 연결 전에 PRD 스키마로 마이그레이션합니다.
 
 - 신규 초안 컬렉션: `ownerCampaignDrafts`
 - 캠페인 본 데이터: `bloggerCampaigns`
