@@ -7,6 +7,8 @@ type Platform = "blog" | "instagram" | "youtube";
 type ViewMode =
   | "home"
   | "campaigns"
+  | "booking"
+  | "visit"
   | "pilot"
   | "advertising"
   | "owner"
@@ -50,6 +52,8 @@ type OwnerForm = {
 
 type ReviewStatus = "waiting" | "reminded" | "published" | "completed";
 type TodayStatus = "open" | "closing" | "scheduled";
+type SlotStatus = "open" | "closingSoon" | "reserved";
+type VisitStatus = "reserved" | "checkInPending" | "checkedIn" | "pending";
 
 type ReviewItem = {
   id: number;
@@ -69,6 +73,31 @@ type TodayOpen = {
   status: TodayStatus;
 };
 
+type ReservationSlot = {
+  id: number;
+  campaignId: number;
+  date: string;
+  time: string;
+  applicantCount: number;
+  recruitmentCount: number;
+  status: SlotStatus;
+  reservationStatus: string;
+};
+
+type VisitCheckIn = {
+  id: number;
+  campaignId: number;
+  userName: string;
+  initial: string;
+  time: string;
+  status: VisitStatus;
+  qrVerified: boolean;
+  gpsVerified: boolean;
+  timeVerified: boolean;
+  distanceMeters: number;
+  checkedInAt?: string;
+};
+
 const platformLabels: Record<Platform, string> = {
   blog: "Blog",
   instagram: "IG",
@@ -78,6 +107,8 @@ const platformLabels: Record<Platform, string> = {
 const viewHash: Record<ViewMode, string> = {
   home: "#home",
   campaigns: "#campaigns",
+  booking: "#booking-slots",
+  visit: "#visit-verification",
   pilot: "#pilot",
   advertising: "#advertising",
   owner: "#owner-registration",
@@ -88,8 +119,8 @@ const viewHash: Record<ViewMode, string> = {
 const navItems: Array<{ label: string; view: ViewMode }> = [
   { label: "홈", view: "home" },
   { label: "캠페인", view: "campaigns" },
-  { label: "예약슬롯", view: "owner" },
-  { label: "방문인증", view: "owner" },
+  { label: "예약슬롯", view: "booking" },
+  { label: "방문인증", view: "visit" },
   { label: "후기회수", view: "review" },
   { label: "오늘오픈", view: "today" },
   { label: "파일럿", view: "pilot" },
@@ -424,6 +455,147 @@ const todayStatusLabels: Record<TodayStatus, string> = {
   scheduled: "오픈 예정"
 };
 
+const slotStatusLabels: Record<SlotStatus, string> = {
+  open: "예약 가능",
+  closingSoon: "마감 임박",
+  reserved: "예약 마감"
+};
+
+const visitStatusLabels: Record<VisitStatus, string> = {
+  reserved: "방문 예정",
+  checkInPending: "확인 대기",
+  checkedIn: "인증 완료",
+  pending: "확인 필요"
+};
+
+const bookingDays = [
+  { key: "2026-07-13", weekday: "월", day: "13", today: true },
+  { key: "2026-07-14", weekday: "화", day: "14" },
+  { key: "2026-07-15", weekday: "수", day: "15" },
+  { key: "2026-07-16", weekday: "목", day: "16" },
+  { key: "2026-07-17", weekday: "금", day: "17" },
+  { key: "2026-07-18", weekday: "토", day: "18" },
+  { key: "2026-07-19", weekday: "일", day: "19" }
+];
+
+const initialReservationSlots: ReservationSlot[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    date: "2026-07-13",
+    time: "11:30",
+    applicantCount: 2,
+    recruitmentCount: 4,
+    status: "open",
+    reservationStatus: "네이버예약 연동"
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    date: "2026-07-13",
+    time: "14:00",
+    applicantCount: 1,
+    recruitmentCount: 4,
+    status: "open",
+    reservationStatus: "네이버예약 연동"
+  },
+  {
+    id: 3,
+    campaignId: 5,
+    date: "2026-07-13",
+    time: "15:30",
+    applicantCount: 3,
+    recruitmentCount: 4,
+    status: "closingSoon",
+    reservationStatus: "네이버예약 연동"
+  },
+  {
+    id: 4,
+    campaignId: 2,
+    date: "2026-07-13",
+    time: "17:00",
+    applicantCount: 4,
+    recruitmentCount: 4,
+    status: "reserved",
+    reservationStatus: "직접 등록"
+  },
+  {
+    id: 5,
+    campaignId: 3,
+    date: "2026-07-14",
+    time: "14:00",
+    applicantCount: 0,
+    recruitmentCount: 4,
+    status: "open",
+    reservationStatus: "시간대별 정원 관리"
+  }
+];
+
+const initialVisitCheckIns: VisitCheckIn[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    userName: "김하늘",
+    initial: "김",
+    time: "14:00",
+    status: "checkInPending",
+    qrVerified: true,
+    gpsVerified: true,
+    timeVerified: true,
+    distanceMeters: 18
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    userName: "이서준",
+    initial: "이",
+    time: "14:00",
+    status: "checkedIn",
+    qrVerified: true,
+    gpsVerified: true,
+    timeVerified: true,
+    distanceMeters: 9,
+    checkedInAt: "13:56"
+  },
+  {
+    id: 3,
+    campaignId: 5,
+    userName: "박지민",
+    initial: "박",
+    time: "15:30",
+    status: "reserved",
+    qrVerified: false,
+    gpsVerified: false,
+    timeVerified: false,
+    distanceMeters: 0
+  },
+  {
+    id: 4,
+    campaignId: 2,
+    userName: "최유나",
+    initial: "최",
+    time: "17:00",
+    status: "pending",
+    qrVerified: true,
+    gpsVerified: false,
+    timeVerified: true,
+    distanceMeters: 284
+  },
+  {
+    id: 5,
+    campaignId: 3,
+    userName: "정민호",
+    initial: "정",
+    time: "18:30",
+    status: "checkedIn",
+    qrVerified: true,
+    gpsVerified: true,
+    timeVerified: true,
+    distanceMeters: 22,
+    checkedInAt: "18:24"
+  }
+];
+
 const filters = ["전체", "한산시간", "맛집", "카페", "액티비티", "문화"];
 
 function getViewFromHash(): ViewMode {
@@ -450,6 +622,17 @@ export default function App() {
   const [reviewFilter, setReviewFilter] = useState<"전체" | ReviewStatus>("전체");
   const [todayFilter, setTodayFilter] = useState("전체");
   const [appliedTodayIds, setAppliedTodayIds] = useState<number[]>([]);
+  const [reservationSlots, setReservationSlots] = useState(initialReservationSlots);
+  const [selectedBookingDate, setSelectedBookingDate] = useState("2026-07-13");
+  const [slotFilter, setSlotFilter] = useState<"전체" | SlotStatus>("전체");
+  const [selectedSlotId, setSelectedSlotId] = useState(initialReservationSlots[0].id);
+  const [slotSyncMessage, setSlotSyncMessage] = useState("");
+  const [visitCheckIns, setVisitCheckIns] = useState(initialVisitCheckIns);
+  const [visitFilter, setVisitFilter] = useState<"전체" | VisitStatus>("전체");
+  const [visitQuery, setVisitQuery] = useState("");
+  const [selectedVisitId, setSelectedVisitId] = useState(initialVisitCheckIns[0].id);
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [visitToast, setVisitToast] = useState("");
 
   useEffect(() => {
     const syncHash = () => setCurrentView(getViewFromHash());
@@ -500,6 +683,37 @@ export default function App() {
     [todayFilter]
   );
 
+  const visibleSlots = useMemo(
+    () =>
+      reservationSlots.filter(
+        (slot) =>
+          slot.date === selectedBookingDate &&
+          (slotFilter === "전체" || slot.status === slotFilter)
+      ),
+    [reservationSlots, selectedBookingDate, slotFilter]
+  );
+
+  const selectedSlot = reservationSlots.find((slot) => slot.id === selectedSlotId) ?? visibleSlots[0];
+  const daySlots = reservationSlots.filter((slot) => slot.date === selectedBookingDate);
+  const totalSlotCapacity = daySlots.reduce((sum, slot) => sum + slot.recruitmentCount, 0);
+  const totalSlotApplicants = daySlots.reduce((sum, slot) => sum + slot.applicantCount, 0);
+
+  const filteredVisits = useMemo(() => {
+    const normalizedQuery = visitQuery.trim().toLowerCase();
+
+    return visitCheckIns.filter((visit) => {
+      const campaign = getCampaignById(visit.campaignId);
+      const matchesFilter = visitFilter === "전체" || visit.status === visitFilter;
+      const matchesQuery =
+        normalizedQuery.length === 0 ||
+        [visit.userName, campaign.title, campaign.store].join(" ").toLowerCase().includes(normalizedQuery);
+
+      return matchesFilter && matchesQuery;
+    });
+  }, [visitCheckIns, visitFilter, visitQuery]);
+
+  const selectedVisit = visitCheckIns.find((visit) => visit.id === selectedVisitId) ?? filteredVisits[0];
+
   const navigateTo = (view: ViewMode) => {
     window.location.hash = viewHash[view];
     setCurrentView(view);
@@ -535,6 +749,55 @@ export default function App() {
   const handleInquirySubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setInquirySubmitted(true);
+  };
+
+  const handleSlotSync = () => {
+    setSlotSyncMessage("예약 연동 현황을 방금 갱신했습니다.");
+    window.setTimeout(() => setSlotSyncMessage(""), 2400);
+  };
+
+  const handleAddSlot = () => {
+    const nextSlot: ReservationSlot = {
+      id: Date.now(),
+      campaignId: selectedCampaignId,
+      date: selectedBookingDate,
+      time: "16:30",
+      applicantCount: 0,
+      recruitmentCount: 4,
+      status: "open",
+      reservationStatus: "직접 등록"
+    };
+
+    setReservationSlots((slots) => [...slots, nextSlot]);
+    setSelectedSlotId(nextSlot.id);
+    setSlotFilter("전체");
+    setSlotSyncMessage("새 예약슬롯이 임시 추가되었습니다.");
+    window.setTimeout(() => setSlotSyncMessage(""), 2400);
+  };
+
+  const updateVisitStatus = (status: VisitStatus) => {
+    if (!selectedVisit) return;
+
+    setVisitCheckIns((items) =>
+      items.map((visit) =>
+        visit.id === selectedVisit.id
+          ? {
+              ...visit,
+              status,
+              qrVerified: status === "checkedIn" ? true : visit.qrVerified,
+              gpsVerified: status === "checkedIn" ? true : visit.gpsVerified,
+              timeVerified: status === "checkedIn" ? true : visit.timeVerified,
+              checkedInAt: status === "checkedIn" ? "14:03" : visit.checkedInAt
+            }
+          : visit
+      )
+    );
+    setVisitToast(
+      status === "checkedIn"
+        ? `${selectedVisit.userName} 님의 방문을 인증했습니다.`
+        : `${selectedVisit.userName} 님을 확인 필요 상태로 표시했습니다.`
+    );
+    window.setTimeout(() => setVisitToast(""), 2400);
   };
 
   const advanceReview = (id: number) => {
@@ -835,6 +1098,338 @@ export default function App() {
       </form>
     </section>
   );
+
+  const renderBookingSlots = () => {
+    const slotCampaign = selectedSlot ? getCampaignById(selectedSlot.campaignId) : campaigns[0];
+    const slotFill = selectedSlot
+      ? Math.round((selectedSlot.applicantCount / selectedSlot.recruitmentCount) * 100)
+      : 0;
+
+    return (
+      <main className="booking-page">
+        {renderHeader()}
+        <section className="dashboard-shell management-shell" aria-label="예약슬롯 관리">
+          <div className="management-title">
+            <div>
+              <p>예약슬롯</p>
+              <h1>한산 시간대의 방문 가능 인원과 예약 현황을 관리합니다.</h1>
+              <span>네이버예약 등 외부 예약 연동 상태와 직접 등록 슬롯을 함께 확인합니다.</span>
+            </div>
+            <div className="management-actions">
+              <button className="secondary-action compact-action" type="button" onClick={handleSlotSync}>
+                예약 동기화
+              </button>
+              <button className="primary-action compact-action" type="button" onClick={handleAddSlot}>
+                새 슬롯
+              </button>
+            </div>
+          </div>
+
+          <div className="store-summary">
+            <div>
+              <strong>오브서울 성수점</strong>
+              <span>서울 성동구 연무장길 24 · 네이버예약 연동</span>
+            </div>
+            <em>외부 연동</em>
+          </div>
+
+          <div className="metric-grid">
+            <article><span>오늘 슬롯</span><strong>{daySlots.length}</strong><small>선택 날짜 기준</small></article>
+            <article className="is-success"><span>예약 인원</span><strong>{totalSlotApplicants}</strong><small>{totalSlotCapacity}명 중</small></article>
+            <article><span>남은 자리</span><strong>{Math.max(totalSlotCapacity - totalSlotApplicants, 0)}</strong><small>신청 가능</small></article>
+            <article><span>예약률</span><strong>{totalSlotCapacity ? Math.round((totalSlotApplicants / totalSlotCapacity) * 100) : 0}%</strong><small>자동 계산</small></article>
+          </div>
+
+          <section className="date-card" aria-label="날짜 선택">
+            <div className="date-card-heading">
+              <strong>2026년 7월</strong>
+              <span>{slotSyncMessage || "방금 전 업데이트"}</span>
+            </div>
+            <div className="week-picker">
+              {bookingDays.map((day) => (
+                <button
+                  className={selectedBookingDate === day.key ? "is-selected" : ""}
+                  key={day.key}
+                  type="button"
+                  onClick={() => setSelectedBookingDate(day.key)}
+                >
+                  <span>{day.weekday}</span>
+                  <strong>{day.day}</strong>
+                  {day.today ? <em>오늘</em> : null}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <div className="management-grid">
+            <section className="management-panel" aria-label="슬롯 목록">
+              <div className="queue-heading">
+                <div>
+                  <p>예약 현황</p>
+                  <h2>7월 {Number(selectedBookingDate.slice(-2))}일 슬롯</h2>
+                </div>
+                <span>{visibleSlots.length}개 표시</span>
+              </div>
+              <div className="filter-row">
+                {(["전체", "open", "closingSoon", "reserved"] as Array<"전체" | SlotStatus>).map((filter) => (
+                  <button
+                    className={slotFilter === filter ? "is-active" : ""}
+                    key={filter}
+                    type="button"
+                    onClick={() => setSlotFilter(filter)}
+                  >
+                    {filter === "전체" ? "전체" : slotStatusLabels[filter]}
+                  </button>
+                ))}
+              </div>
+              <div className="slot-list">
+                {visibleSlots.length ? (
+                  visibleSlots.map((slot) => {
+                    const campaign = getCampaignById(slot.campaignId);
+                    const fill = Math.round((slot.applicantCount / slot.recruitmentCount) * 100);
+
+                    return (
+                      <button
+                        className={selectedSlot?.id === slot.id ? "slot-item is-selected" : "slot-item"}
+                        key={slot.id}
+                        type="button"
+                        onClick={() => setSelectedSlotId(slot.id)}
+                      >
+                        <span className={`status-dot is-${slot.status}`} />
+                        <strong>{slot.time}</strong>
+                        <span>
+                          <b>{slotStatusLabels[slot.status]}</b>
+                          <small>{campaign.title}</small>
+                          <i><span style={{ width: `${fill}%` }} /></i>
+                        </span>
+                        <em>{slot.applicantCount}/{slot.recruitmentCount}명</em>
+                        <small>{slot.reservationStatus}</small>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="empty-state">
+                    <strong>등록된 슬롯이 없습니다.</strong>
+                    <span>선택한 날짜에 방문 가능한 시간을 추가하세요.</span>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <aside className="management-side-panel" aria-label="슬롯 상세">
+              {selectedSlot ? (
+                <>
+                  <div className="side-panel-heading">
+                    <span className={`status-label is-${selectedSlot.status}`}>{slotStatusLabels[selectedSlot.status]}</span>
+                    <h2>{selectedSlot.time} 슬롯</h2>
+                    <p>{slotCampaign.store} · {slotCampaign.region}</p>
+                  </div>
+                  <div className="capacity-block">
+                    <strong>{selectedSlot.applicantCount}/{selectedSlot.recruitmentCount}명</strong>
+                    <span>현재 예약률 {slotFill}%</span>
+                    <i><span style={{ width: `${slotFill}%` }} /></i>
+                  </div>
+                  <dl className="side-detail-list">
+                    <div><dt>방문 날짜</dt><dd>2026. 7. {Number(selectedSlot.date.slice(-2))}</dd></div>
+                    <div><dt>체험 시간</dt><dd>{selectedSlot.time} - {addMinutes(selectedSlot.time, 90)}</dd></div>
+                    <div><dt>예약 방식</dt><dd>{selectedSlot.reservationStatus}</dd></div>
+                    <div><dt>제공 내역</dt><dd>{slotCampaign.reward}</dd></div>
+                  </dl>
+                  <button className="secondary-action" type="button" onClick={() => navigateTo("visit")}>
+                    방문인증 화면으로 이동
+                  </button>
+                </>
+              ) : (
+                <div className="empty-state">
+                  <strong>슬롯을 선택해주세요.</strong>
+                </div>
+              )}
+            </aside>
+          </div>
+        </section>
+      </main>
+    );
+  };
+
+  const renderVisitVerification = () => {
+    const checkedInCount = visitCheckIns.filter((visit) => visit.status === "checkedIn").length;
+    const waitingCount = visitCheckIns.filter((visit) => visit.status === "checkInPending").length;
+    const pendingCount = visitCheckIns.filter((visit) => visit.status === "pending").length;
+    const selectedVisitCampaign = selectedVisit ? getCampaignById(selectedVisit.campaignId) : campaigns[0];
+
+    return (
+      <main className="visit-page">
+        {renderHeader()}
+        <section className="dashboard-shell management-shell" aria-label="방문인증 관리">
+          <div className="management-title">
+            <div>
+              <p>방문인증</p>
+              <h1>QR·GPS 체크인으로 체험단의 실제 방문을 확인합니다.</h1>
+              <span>예약 시간, 매장 반경, QR 스캔 여부를 함께 검증합니다.</span>
+            </div>
+            <div className="management-actions">
+              <button className="secondary-action compact-action" type="button" onClick={() => setVisitToast("방문 목록을 새로고침했습니다.")}>
+                새로고침
+              </button>
+              <button className="primary-action compact-action" type="button" onClick={() => setIsQrOpen(true)}>
+                매장 QR 열기
+              </button>
+            </div>
+          </div>
+
+          <div className="store-summary">
+            <div>
+              <strong>오브서울 성수점</strong>
+              <span>서울 성동구 연무장길 24 · GPS 인증 사용</span>
+            </div>
+            <em>완료</em>
+          </div>
+
+          <div className="metric-grid">
+            <article><span>오늘 방문 예정</span><strong>{visitCheckIns.length}</strong><small>명</small></article>
+            <article className="is-success"><span>인증 완료</span><strong>{checkedInCount}</strong><small>체크인 저장</small></article>
+            <article><span>확인 대기</span><strong>{waitingCount}</strong><small>QR·GPS 확인 중</small></article>
+            <article><span>확인 필요</span><strong>{pendingCount}</strong><small>수동 검토</small></article>
+          </div>
+
+          <div className="verification-flow">
+            <span className="is-done">1 QR 스캔</span>
+            <span className="is-done">2 GPS 확인</span>
+            <span className="is-active">3 방문시각 검증</span>
+            <span>4 기록 저장</span>
+          </div>
+
+          <div className="management-grid">
+            <section className="management-panel" aria-label="방문자 목록">
+              <div className="queue-heading">
+                <div>
+                  <p>오늘 방문자</p>
+                  <h2>2026년 7월 13일</h2>
+                </div>
+                <label className="compact-search">
+                  <span>검색</span>
+                  <input
+                    value={visitQuery}
+                    onChange={(event) => setVisitQuery(event.target.value)}
+                    placeholder="이름 또는 캠페인"
+                  />
+                </label>
+              </div>
+              <div className="filter-row">
+                {(["전체", "checkInPending", "checkedIn", "pending"] as Array<"전체" | VisitStatus>).map((filter) => (
+                  <button
+                    className={visitFilter === filter ? "is-active" : ""}
+                    key={filter}
+                    type="button"
+                    onClick={() => setVisitFilter(filter)}
+                  >
+                    {filter === "전체" ? "전체" : visitStatusLabels[filter]}
+                  </button>
+                ))}
+              </div>
+              <div className="visit-list">
+                {filteredVisits.length ? (
+                  filteredVisits.map((visit) => {
+                    const campaign = getCampaignById(visit.campaignId);
+
+                    return (
+                      <button
+                        className={selectedVisit?.id === visit.id ? "visit-item is-selected" : "visit-item"}
+                        key={visit.id}
+                        type="button"
+                        onClick={() => setSelectedVisitId(visit.id)}
+                      >
+                        <span className="avatar-badge">{visit.initial}</span>
+                        <span>
+                          <strong>{visit.userName}</strong>
+                          <small>{campaign.title}</small>
+                        </span>
+                        <em>{visit.time}</em>
+                        <b className={`visit-status is-${visit.status}`}>{visitStatusLabels[visit.status]}</b>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="empty-state">
+                    <strong>검색 결과가 없습니다.</strong>
+                    <span>다른 이름이나 상태를 선택하세요.</span>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <aside className="management-side-panel" aria-label="방문 인증 상세">
+              {selectedVisit ? (
+                <>
+                  <div className="side-panel-heading">
+                    <span className={`visit-status is-${selectedVisit.status}`}>{visitStatusLabels[selectedVisit.status]}</span>
+                    <h2>{selectedVisit.userName} 님</h2>
+                    <p>{selectedVisit.time} 예약 · {selectedVisitCampaign.title}</p>
+                  </div>
+                  <div className="check-step-list">
+                    <div className={selectedVisit.qrVerified ? "is-complete" : ""}>
+                      <strong>QR 코드 스캔</strong>
+                      <span>{selectedVisit.qrVerified ? "스캔 완료" : "대기 중"}</span>
+                    </div>
+                    <div className={selectedVisit.gpsVerified ? "is-complete" : selectedVisit.distanceMeters > 100 ? "is-warning" : ""}>
+                      <strong>GPS 위치 확인</strong>
+                      <span>{selectedVisit.distanceMeters ? `매장과 ${selectedVisit.distanceMeters}m` : "위치 대기"}</span>
+                    </div>
+                    <div className={selectedVisit.timeVerified ? "is-complete" : ""}>
+                      <strong>방문 시간 확인</strong>
+                      <span>{selectedVisit.timeVerified ? "예약 시간 내" : "확인 전"}</span>
+                    </div>
+                    <div className={selectedVisit.checkedInAt ? "is-complete" : ""}>
+                      <strong>체크인 기록</strong>
+                      <span>{selectedVisit.checkedInAt ? `${selectedVisit.checkedInAt} 저장` : "저장 대기"}</span>
+                    </div>
+                  </div>
+                  <div className={selectedVisit.distanceMeters > 100 ? "location-card is-warning" : "location-card"}>
+                    <strong>방문 위치</strong>
+                    <span>허용 반경 100m · 현재 {selectedVisit.distanceMeters || "대기"}m</span>
+                    <i />
+                  </div>
+                  <div className="side-actions">
+                    <button
+                      className="primary-action compact-action"
+                      type="button"
+                      disabled={selectedVisit.status === "checkedIn"}
+                      onClick={() => updateVisitStatus("checkedIn")}
+                    >
+                      방문 확인
+                    </button>
+                    <button className="secondary-action compact-action" type="button" onClick={() => updateVisitStatus("pending")}>
+                      확인 필요
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="empty-state">
+                  <strong>방문자를 선택해주세요.</strong>
+                </div>
+              )}
+            </aside>
+          </div>
+
+          {isQrOpen ? (
+            <div className="qr-inline-panel" role="dialog" aria-label="매장 방문 QR">
+              <div>
+                <p>STORE CHECK-IN</p>
+                <h2>오브서울 성수점 방문 QR</h2>
+                <span>체험단원이 QR을 스캔하면 GPS 확인이 시작됩니다.</span>
+              </div>
+              <div className="qr-box">QR</div>
+              <button className="secondary-action compact-action" type="button" onClick={() => setIsQrOpen(false)}>
+                닫기
+              </button>
+            </div>
+          ) : null}
+
+          {visitToast ? <p className="toast-message" role="status">{visitToast}</p> : null}
+        </section>
+      </main>
+    );
+  };
 
   const renderOwnerRegistration = () => (
     <main className="owner-page">
@@ -1177,6 +1772,8 @@ export default function App() {
     </button>
   );
 
+  if (currentView === "booking") return renderBookingSlots();
+  if (currentView === "visit") return renderVisitVerification();
   if (currentView === "owner") return renderOwnerRegistration();
   if (currentView === "review") return renderReviewRecovery();
   if (currentView === "today") return renderTodayOpen();
@@ -1198,4 +1795,10 @@ export default function App() {
       {renderFloatingContact()}
     </main>
   );
+}
+
+function addMinutes(time: string, minutes: number) {
+  const [hour, minute] = time.split(":").map(Number);
+  const date = new Date(0, 0, 0, hour, minute + minutes);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
