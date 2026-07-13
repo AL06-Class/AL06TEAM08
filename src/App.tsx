@@ -30,7 +30,7 @@ type Category = {
   imageUrl: string;
 };
 
-type ViewMode = "home" | "ownerRegistration" | "reviewRecovery";
+type ViewMode = "home" | "ownerRegistration" | "reviewRecovery" | "todayOpen";
 
 type OwnerCampaignForm = {
   storeName: string;
@@ -60,6 +60,15 @@ type ReviewRecoveryItem = {
   reminderCount: number;
   lastReminderAt: string;
   source: string;
+};
+
+type TodayOpenStatus = "open" | "closingSoon" | "scheduled";
+
+type TodayOpenItem = {
+  campaignId: number;
+  openAt: string;
+  remainingSlots: number;
+  openStatus: TodayOpenStatus;
 };
 
 const heroBanners = [
@@ -435,10 +444,28 @@ const reviewFilters: Array<{ label: string; value: "all" | ReviewRecoveryStatus 
   { label: "회수 완료", value: "completed" }
 ];
 
+const todayOpenItems: TodayOpenItem[] = [
+  { campaignId: 1, openAt: "09:00", remainingSlots: 4, openStatus: "open" },
+  { campaignId: 2, openAt: "10:30", remainingSlots: 2, openStatus: "closingSoon" },
+  { campaignId: 3, openAt: "12:00", remainingSlots: 7, openStatus: "open" },
+  { campaignId: 4, openAt: "14:00", remainingSlots: 10, openStatus: "scheduled" },
+  { campaignId: 5, openAt: "15:30", remainingSlots: 3, openStatus: "scheduled" },
+  { campaignId: 6, openAt: "17:00", remainingSlots: 6, openStatus: "scheduled" }
+];
+
+const todayOpenStatusLabels: Record<TodayOpenStatus, string> = {
+  open: "지금 신청",
+  closingSoon: "마감 임박",
+  scheduled: "오픈 예정"
+};
+
+const todayOpenFilters = ["전체", "지금 신청", "카페", "맛집", "액티비티", "문화"];
+
 const getViewFromHash = (): ViewMode => {
   if (typeof window === "undefined") return "home";
   if (window.location.hash === "#owner-registration") return "ownerRegistration";
   if (window.location.hash === "#review-recovery") return "reviewRecovery";
+  if (window.location.hash === "#today-open") return "todayOpen";
   return "home";
 };
 
@@ -455,6 +482,8 @@ export default function App() {
   const [reviewItems, setReviewItems] = useState(reviewRecoveryInitialItems);
   const [reviewFilter, setReviewFilter] =
     useState<"all" | ReviewRecoveryStatus>("all");
+  const [todayOpenFilter, setTodayOpenFilter] = useState("전체");
+  const [appliedTodayCampaignIds, setAppliedTodayCampaignIds] = useState<number[]>([]);
 
   const visibleCampaigns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -501,6 +530,25 @@ export default function App() {
     ).length
   };
 
+
+  const visibleTodayOpenItems = todayOpenItems
+    .map((item) => ({
+      ...item,
+      campaign: campaigns.find((campaign) => campaign.id === item.campaignId)!
+    }))
+    .filter((item) =>
+      todayOpenFilter === "전체"
+        ? true
+        : todayOpenFilter === "지금 신청"
+          ? item.openStatus !== "scheduled"
+          : item.campaign.category === todayOpenFilter
+    );
+
+  const todayOpenSummary = {
+    total: todayOpenItems.length,
+    available: todayOpenItems.filter((item) => item.openStatus !== "scheduled").length,
+    remaining: todayOpenItems.reduce((sum, item) => sum + item.remainingSlots, 0)
+  };
   useEffect(() => {
     const handleHashChange = () => setCurrentView(getViewFromHash());
 
@@ -522,6 +570,13 @@ export default function App() {
     window.location.hash = "review-recovery";
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  const openTodayOpen = () => {
+    setCurrentView("todayOpen");
+    setIsMenuOpen(false);
+    window.location.hash = "today-open";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const goHome = () => {
     setCurrentView("home");
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
@@ -571,6 +626,151 @@ export default function App() {
       )
     );
   };
+
+  const applyTodayCampaign = (campaignId: number) => {
+    setAppliedTodayCampaignIds((current) =>
+      current.includes(campaignId) ? current : [...current, campaignId]
+    );
+  };
+
+  if (currentView === "todayOpen") {
+    const featuredTodayItem = todayOpenItems[0];
+    const featuredTodayCampaign = campaigns.find(
+      (campaign) => campaign.id === featuredTodayItem.campaignId
+    )!;
+
+    return (
+      <main className="app today-page">
+        <div className="notice-bar today-notice">
+          <span>오늘오픈</span>
+          <strong>오늘 공개되는 방문 인증 체험단 캠페인을 시간순으로 확인하세요.</strong>
+        </div>
+
+        <header className="today-header">
+          <button className="owner-logo-button" type="button" onClick={goHome}>
+            <img className="logo-image" src={julseoLogo} alt="줄서" />
+          </button>
+          <div className="today-header-copy">
+            <p>매일 새 캠페인</p>
+            <h1>오늘오픈</h1>
+          </div>
+          <button className="secondary-action today-home-button" type="button" onClick={goHome}>
+            메인으로 돌아가기
+          </button>
+        </header>
+
+        <section className="today-workspace" aria-label="오늘오픈 캠페인">
+          <div className="today-intro">
+            <div>
+              <p>2026년 7월 13일</p>
+              <h2>오늘 새로 열린 체험단을 가장 먼저 만나보세요</h2>
+              <span>방문 시간과 남은 자리를 확인하고 바로 신청할 수 있습니다.</span>
+            </div>
+            <div className="today-summary" aria-label="오늘오픈 요약">
+              <div><span>오늘 공개</span><strong>{todayOpenSummary.total}</strong></div>
+              <div><span>지금 신청</span><strong>{todayOpenSummary.available}</strong></div>
+              <div><span>남은 자리</span><strong>{todayOpenSummary.remaining}</strong></div>
+            </div>
+          </div>
+
+          <article className="today-spotlight">
+            <div className="today-spotlight-media">
+              <img src={featuredTodayCampaign.imageUrl} alt={`${featuredTodayCampaign.title} 대표 이미지`} />
+              <span>09:00 OPEN</span>
+            </div>
+            <div className="today-spotlight-copy">
+              <p>오늘의 첫 번째 캠페인</p>
+              <h2>{featuredTodayCampaign.title}</h2>
+              <span>{featuredTodayCampaign.brandName} · {featuredTodayCampaign.region}</span>
+              <dl>
+                <div><dt>방문 시간</dt><dd>{featuredTodayCampaign.quietTimeSlot}</dd></div>
+                <div><dt>방문 인증</dt><dd>{featuredTodayCampaign.verificationMethod}</dd></div>
+                <div><dt>제공 내역</dt><dd>{featuredTodayCampaign.reward}</dd></div>
+              </dl>
+              <button
+                className="primary-action today-featured-action"
+                type="button"
+                onClick={() => applyTodayCampaign(featuredTodayCampaign.id)}
+                disabled={appliedTodayCampaignIds.includes(featuredTodayCampaign.id)}
+              >
+                {appliedTodayCampaignIds.includes(featuredTodayCampaign.id)
+                  ? "신청 완료"
+                  : `남은 ${featuredTodayItem.remainingSlots}자리 바로 신청`}
+              </button>
+            </div>
+          </article>
+
+          <section className="today-list" aria-label="오늘 공개 캠페인 목록">
+            <div className="today-list-heading">
+              <div>
+                <p>시간순 공개</p>
+                <h2>오늘의 캠페인</h2>
+              </div>
+              <span>{visibleTodayOpenItems.length}개 캠페인</span>
+            </div>
+
+            <div className="today-filter-row" aria-label="오늘오픈 필터">
+              {todayOpenFilters.map((filter) => (
+                <button
+                  className={todayOpenFilter === filter ? "is-active" : ""}
+                  key={filter}
+                  type="button"
+                  onClick={() => setTodayOpenFilter(filter)}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+
+            <div className="today-campaign-grid">
+              {visibleTodayOpenItems.map((item) => {
+                const isApplied = appliedTodayCampaignIds.includes(item.campaign.id);
+                const isScheduled = item.openStatus === "scheduled";
+
+                return (
+                  <article className="today-campaign-card" key={item.campaignId}>
+                    <div className="today-card-media">
+                      <img src={item.campaign.imageUrl} alt={`${item.campaign.title} 이미지`} />
+                      <span className={`today-status is-${item.openStatus}`}>
+                        {todayOpenStatusLabels[item.openStatus]}
+                      </span>
+                      <strong>{item.openAt}</strong>
+                    </div>
+                    <div className="today-card-body">
+                      <p>{item.campaign.brandName} · {item.campaign.region}</p>
+                      <h3>{item.campaign.title}</h3>
+                      <div className="today-card-facts">
+                        <span><b>방문</b>{item.campaign.quietTimeSlot}</span>
+                        <span><b>인증</b>{item.campaign.verificationMethod}</span>
+                        <span><b>혜택</b>{item.campaign.reward}</span>
+                      </div>
+                      <div className="today-card-footer">
+                        <span><strong>{item.remainingSlots}</strong>자리 남음</span>
+                        <button
+                          type="button"
+                          disabled={isScheduled || isApplied}
+                          onClick={() => applyTodayCampaign(item.campaignId)}
+                        >
+                          {isApplied ? "신청 완료" : isScheduled ? `${item.openAt} 오픈` : "바로 신청"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            {visibleTodayOpenItems.length === 0 ? (
+              <div className="today-empty" role="status">
+                <strong>선택한 조건의 오늘오픈 캠페인이 없습니다.</strong>
+                <span>다른 카테고리를 선택해보세요.</span>
+              </div>
+            ) : null}
+          </section>
+        </section>
+      </main>
+    );
+  }
 
   if (currentView === "reviewRecovery") {
     return (
@@ -1034,10 +1234,20 @@ export default function App() {
             "광고문의"
           ].map((item) => (
             <a
-              className={item === "후기회수" ? "review-nav-link" : ""}
+              className={
+                item === "후기회수"
+                  ? "review-nav-link"
+                  : item === "오늘오픈"
+                    ? "today-nav-link"
+                    : ""
+              }
               key={item}
-              href={item === "후기회수" ? "#review-recovery" : `#${item}`}
-              onClick={item === "후기회수" ? openReviewRecovery : undefined}
+              href={
+                item === "후기회수" ? "#review-recovery" : item === "오늘오픈" ? "#today-open" : `#${item}`
+              }
+              onClick={
+                item === "후기회수" ? openReviewRecovery : item === "오늘오픈" ? openTodayOpen : undefined
+              }
             >
               {item}
             </a>
@@ -1075,7 +1285,10 @@ export default function App() {
             className={selectedFilter === category.value ? "is-selected" : ""}
             key={category.label}
             type="button"
-            onClick={() => setSelectedFilter(category.value)}
+            onClick={() => {
+              if (category.label === "오늘오픈") openTodayOpen();
+              else setSelectedFilter(category.value);
+            }}
           >
             <img src={category.imageUrl} alt="" />
             <span>{category.label}</span>

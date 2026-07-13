@@ -104,6 +104,9 @@
 - `reviewDueDate`: 후기 제출 마감일
 - `reminderCount`: 후기 리마인드 발송 횟수
 - `lastReminderAt`: 마지막 후기 리마인드 발송 시각
+- `openAt`: 오늘오픈 캠페인 공개 시각
+- `remainingSlots`: 현재 신청 가능한 남은 자리
+- `openStatus`: 오늘오픈 공개 상태
 - `pricingHypothesis`: 가격 가설
 - `campaignGoal`: 캠페인 목표
 - `matchingPreference`: 선호 체험단 기준
@@ -137,6 +140,9 @@
 - `published`: 발행됨
 - `completed`: 완료
 - `cancelled`: 취소됨
+- `open`: 현재 신청 가능
+- `closingSoon`: 남은 자리가 적어 마감 임박
+- `scheduled`: 오늘 공개 예정
 
 ## 데이터 모델 초안
 
@@ -294,3 +300,4 @@
 - 2026-07-10: 사장님 체험단 모집 등록 폼 기준으로 `ownerCampaignDrafts`, 자동 등록, AI 매칭, 체크인 대기 상태값 보강
 - 2026-07-13: 후기회수 관리 화면 기준으로 후기 작성자, 제출 마감일, 리마인드 횟수와 마지막 발송 시각 필드 보강
 - 2026-07-13: 최신 `main`의 `docs/PRD.md`를 최종 제품·DB 기준으로 지정하고 현재 프로토타입 모델의 마이그레이션 원칙 추가
+- 2026-07-13: 오늘오픈 페이지 기준으로 공개 시각, 남은 자리, 공개 상태 필드와 상태값 추가
