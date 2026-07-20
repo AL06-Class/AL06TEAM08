@@ -9,12 +9,16 @@ import {
   Clock3,
   Crosshair,
   FileText,
+  History,
   LocateFixed,
   MapPin,
+  MessageSquare,
   Navigation,
   QrCode,
   ReceiptText,
   RefreshCw,
+  Send,
+  Settings2,
   ShieldCheck,
   Store,
   User,
@@ -26,6 +30,7 @@ import { calculateDistanceMeters, isWithinReservationWindow } from "@/lib/checki
 
 type Scenario = "near" | "far" | "noPermission" | "lowAccuracy" | "wrongTime";
 type CheckinStatus = "ready" | "blocked" | "permission" | "accuracy" | "done";
+type ReviewStatus = "none" | "pending" | "approved";
 
 const storeLocation = { latitude: 37.5446, longitude: 127.0559 };
 const settings = {
@@ -57,8 +62,12 @@ const scenarios: Record<Scenario, { label: string; now: string; location: typeof
 export default function AutoCheckinPage() {
   const [scenario, setScenario] = useState<Scenario>("near");
   const [agreed, setAgreed] = useState(true);
+  const [qrRequired, setQrRequired] = useState(true);
+  const [qrScanned, setQrScanned] = useState(false);
   const [checking, setChecking] = useState(false);
   const [completedAt, setCompletedAt] = useState("");
+  const [reviewStatus, setReviewStatus] = useState<ReviewStatus>("none");
+  const [manualReason, setManualReason] = useState("위치 권한이 꺼져 있어 매장 내부 사진과 영수증으로 확인 요청합니다.");
   const current = scenarios[scenario];
 
   const distance = useMemo(() => calculateDistanceMeters(current.location, storeLocation), [current.location]);
@@ -75,7 +84,7 @@ export default function AutoCheckinPage() {
       ? "permission"
       : current.accuracy > settings.maxGpsAccuracyMeters
         ? "accuracy"
-        : distance <= settings.radiusMeters && inTime && agreed
+        : distance <= settings.radiusMeters && inTime && agreed && (!qrRequired || qrScanned)
           ? "ready"
           : "blocked";
 
@@ -88,7 +97,13 @@ export default function AutoCheckinPage() {
     blocked: {
       icon: <XCircle size={22} />,
       title: "체크인 불가",
-      message: inTime ? `현재 매장에서 ${distance}m 떨어져 있습니다. 반경 100m 안으로 이동해주세요.` : "예약 시간 전후 30분 안에만 체크인할 수 있습니다.",
+      message: !agreed
+        ? "위치 정보 이용 동의가 필요합니다."
+        : qrRequired && !qrScanned && distance <= settings.radiusMeters && inTime
+          ? "매장 QR을 스캔하면 체크인 버튼이 활성화됩니다."
+          : inTime
+            ? `현재 매장에서 ${distance}m 떨어져 있습니다. 반경 100m 안으로 이동해주세요.`
+            : "예약 시간 전후 30분 안에만 체크인할 수 있습니다.",
     },
     permission: {
       icon: <MapPin size={22} />,
@@ -123,6 +138,8 @@ export default function AutoCheckinPage() {
         selectedParticipant: true,
         locationPermissionGranted: current.permission,
         settings,
+        qrRequired,
+        qrScanned,
       }),
     });
 
@@ -131,6 +148,15 @@ export default function AutoCheckinPage() {
     if (response.ok) {
       setCompletedAt("13:49");
     }
+  }
+
+  function submitManualRequest() {
+    setReviewStatus("pending");
+  }
+
+  function approveManualRequest() {
+    setReviewStatus("approved");
+    setCompletedAt("13:55");
   }
 
   return (
@@ -147,6 +173,14 @@ export default function AutoCheckinPage() {
             </div>
             <span className={`checkinState ${status}`}>{statusCopy.icon}{statusCopy.title}</span>
           </header>
+
+          <section className="trustStrip" aria-label="체크인 조건">
+            <Condition checked={current.permission} label="위치 권한" />
+            <Condition checked={inTime} label="예약 시간" />
+            <Condition checked={distance <= settings.radiusMeters} label="100m 이내" />
+            <Condition checked={current.accuracy <= settings.maxGpsAccuracyMeters} label="GPS 정확도" />
+            <Condition checked={!qrRequired || qrScanned} label="QR 확인" />
+          </section>
 
           <section className="visitCard">
             <div className="storePhoto">
@@ -176,6 +210,27 @@ export default function AutoCheckinPage() {
             </div>
           </section>
 
+          <section className="qrCheckCard">
+            <div>
+              <span><QrCode size={18} /></span>
+              <div>
+                <strong>GPS+QR 이중 확인</strong>
+                <p>매장에 비치된 QR까지 확인하면 최종 체크인이 가능해집니다.</p>
+              </div>
+            </div>
+            <label className="toggleLine">
+              <input type="checkbox" checked={qrRequired} onChange={(event) => {
+                setQrRequired(event.target.checked);
+                setQrScanned(false);
+                setCompletedAt("");
+              }} />
+              <span>QR 필수</span>
+            </label>
+            <button className={qrScanned ? "verifiedButton" : "secondaryButton"} onClick={() => setQrScanned(true)} disabled={!qrRequired}>
+              <QrCode size={17} /> {qrScanned ? "QR 스캔 완료" : "매장 QR 스캔"}
+            </button>
+          </section>
+
           <section className={`decisionBox ${status}`}>
             {statusCopy.icon}
             <div>
@@ -202,6 +257,27 @@ export default function AutoCheckinPage() {
             </label>
           </section>
 
+          {(status === "permission" || status === "accuracy" || reviewStatus !== "none") && (
+            <section className="manualRequestCard">
+              <div className="manualHeader">
+                <span><Camera size={18} /></span>
+                <div>
+                  <strong>수동 체크인 요청</strong>
+                  <p>사진, 영수증, 사장님 코드는 확인 대기로 저장됩니다.</p>
+                </div>
+              </div>
+              <div className="evidenceGrid">
+                <span><Camera size={16} /> 매장 내부 사진</span>
+                <span><ReceiptText size={16} /> 영수증 사진</span>
+                <span><ShieldCheck size={16} /> 사장님 코드 4821</span>
+              </div>
+              <textarea value={manualReason} onChange={(event) => setManualReason(event.target.value)} aria-label="수동 체크인 요청 사유" />
+              <button className="secondaryButton" onClick={submitManualRequest} disabled={reviewStatus !== "none"}>
+                <Send size={17} /> {reviewStatus === "none" ? "확인 요청 보내기" : "확인 대기 저장됨"}
+              </button>
+            </section>
+          )}
+
           {status === "done" ? (
             <section className="completeBox">
               <CheckCircle2 size={38} />
@@ -217,14 +293,17 @@ export default function AutoCheckinPage() {
                 현재 위치로 체크인하기
               </button>
               {(status === "permission" || status === "accuracy") && (
-                <button className="secondaryButton manualButton"><Camera size={17} /> 수동 확인 요청</button>
+                <button className="secondaryButton manualButton" onClick={submitManualRequest}><Camera size={17} /> 수동 확인 요청</button>
               )}
             </div>
           )}
         </div>
 
         <aside className="ownerSnapshot">
-          <h2>사장님 현황</h2>
+          <div className="ownerTop">
+            <h2>사장님 현황</h2>
+            <button className="iconButton" aria-label="매장 설정"><Settings2 size={17} /></button>
+          </div>
           <div className="ownerMetrics">
             <MiniMetric label="오늘 예약" value="8명" />
             <MiniMetric label="체크인 완료" value={completedAt ? "4명" : "3명"} />
@@ -236,6 +315,32 @@ export default function AutoCheckinPage() {
             <OwnerRow name="김하늘" status="체크인 완료" tone="ok" />
             <OwnerRow name="박지민" status="방문 예정" tone="idle" />
             <OwnerRow name="최유나" status="위치 확인 실패" tone="danger" />
+          </div>
+          {reviewStatus !== "none" && (
+            <div className="reviewQueue">
+              <div>
+                <strong>수동 요청 검토</strong>
+                <p>위예은 · 위치 권한 제한 · 증빙 3개 제출</p>
+              </div>
+              {reviewStatus === "pending" ? (
+                <button className="primaryButton" onClick={approveManualRequest}><CheckCircle2 size={17} /> 승인</button>
+              ) : (
+                <span className="approvedBadge"><CheckCircle2 size={16} /> 승인 완료</span>
+              )}
+            </div>
+          )}
+          <div className="securityPanel">
+            <h3>부정 체크인 방지</h3>
+            <SecurityRow label="서버 거리 재계산" state="정상" tone="ok" />
+            <SecurityRow label="중복 체크인 차단" state={completedAt ? "차단 준비" : "대기"} tone="idle" />
+            <SecurityRow label="GPS 정확도 기준" state={`${current.accuracy}m`} tone={current.accuracy > 100 ? "danger" : "ok"} />
+            <SecurityRow label="위치 위조 의심" state={distance > 100 ? "검토" : "낮음"} tone={distance > 100 ? "warn" : "ok"} />
+          </div>
+          <div className="timelinePanel">
+            <h3><History size={16} /> 알림·로그</h3>
+            <LogRow text="방문 2시간 전 알림 발송 예정" />
+            <LogRow text={qrScanned ? "매장 QR 스캔 완료" : "매장 QR 스캔 대기"} />
+            <LogRow text={completedAt ? `${completedAt} 체크인 기록 저장` : "체크인 기록 저장 대기"} />
           </div>
           <div className="manualHelp">
             <CircleHelp size={17} />
@@ -256,10 +361,22 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   return <div className="infoRow"><span>{icon}{label}</span><strong>{value}</strong></div>;
 }
 
+function Condition({ checked, label }: { checked: boolean; label: string }) {
+  return <span className={checked ? "condition ok" : "condition wait"}>{checked ? <CheckCircle2 size={14} /> : <XCircle size={14} />}{label}</span>;
+}
+
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return <div className="miniMetric"><span>{label}</span><strong>{value}</strong></div>;
 }
 
 function OwnerRow({ name, status, tone }: { name: string; status: string; tone: "ok" | "warn" | "idle" | "danger" }) {
   return <div className="ownerRow"><strong>{name}</strong><span className={tone}>{status}</span></div>;
+}
+
+function SecurityRow({ label, state, tone }: { label: string; state: string; tone: "ok" | "warn" | "idle" | "danger" }) {
+  return <div className="securityRow"><span>{label}</span><strong className={tone}>{state}</strong></div>;
+}
+
+function LogRow({ text }: { text: string }) {
+  return <div className="logRow"><MessageSquare size={14} /><span>{text}</span></div>;
 }

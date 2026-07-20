@@ -23,6 +23,8 @@ export type CheckinInput = {
   cancelled: boolean;
   selectedParticipant: boolean;
   locationPermissionGranted: boolean;
+  qrRequired?: boolean;
+  qrScanned?: boolean;
   settings: CheckinSettings;
 };
 
@@ -61,6 +63,7 @@ export function validateCheckin(input: CheckinInput) {
   if (!isWithinReservationWindow(input)) reasons.push("체크인 가능한 시간이 아닙니다.");
   if (distance > input.settings.radiusMeters) reasons.push(`매장에서 ${distance}m 떨어져 있습니다.`);
   if (input.gpsAccuracy > input.settings.maxGpsAccuracyMeters) reasons.push("GPS 정확도가 낮습니다.");
+  if (input.qrRequired && !input.qrScanned) reasons.push("매장 QR 확인이 필요합니다.");
 
   return {
     approved: reasons.length === 0,
