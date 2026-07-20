@@ -28,6 +28,7 @@ body {
 }
 
 button, input { font: inherit; }
+button:disabled { cursor: not-allowed; opacity: .62; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; }
 a { color: inherit; text-decoration: none; }
@@ -299,6 +300,68 @@ h1 { margin: 0; font-size: 32px; line-height: 1.25; letter-spacing: 0; }
 .qrRenewButton { width: 100%; }
 .toast { position: fixed; left: 50%; bottom: 28px; z-index: 20; min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 17px; transform: translateX(-50%); border-radius: 6px; color: #fff; background: #172235; box-shadow: 0 9px 26px rgba(20, 33, 52, .24); font-size: 12px; font-weight: 700; white-space: nowrap; }
 
+/* Mobile auto check-in MVP */
+.checkinShell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 30px 0 72px; display: grid; grid-template-columns: minmax(320px, 430px) minmax(320px, 1fr); gap: 22px; align-items: start; }
+.mobileCheckin, .ownerSnapshot { border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 55, 84, .05); overflow: hidden; }
+.checkinHero { min-height: 146px; display: grid; gap: 18px; padding: 22px 20px; color: #fff; background: linear-gradient(135deg, #1264dc 0%, #14866d 100%); }
+.checkinHero h1 { color: #fff; font-size: 28px; }
+.checkinHero p { margin: 6px 0 0; color: rgba(255,255,255,.86); }
+.checkinHero .eyebrow { color: rgba(255,255,255,.86); }
+.checkinState { width: fit-content; min-height: 36px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; border-radius: 18px; color: #fff; background: rgba(255,255,255,.18); font-weight: 800; }
+.visitCard, .mapCard, .privacyBox, .completeBox { margin: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.storePhoto { min-height: 130px; display: grid; place-items: center; align-content: center; gap: 9px; color: #fff; background: linear-gradient(rgba(18,34,53,.22), rgba(18,34,53,.52)), url("https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=900&q=80") center/cover; }
+.storePhoto span { width: 50px; height: 50px; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,.18); backdrop-filter: blur(4px); }
+.storePhoto strong { font-size: 18px; text-shadow: 0 1px 8px rgba(0,0,0,.28); }
+.visitInfo { padding: 12px 14px; }
+.infoRow { min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #eef2f6; }
+.infoRow:last-child { border-bottom: 0; }
+.infoRow span { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
+.infoRow strong { text-align: right; font-size: 12px; }
+.mockMap { height: 250px; position: relative; overflow: hidden; border-bottom: 1px solid var(--line); background: #edf4f2; }
+.checkinRadius { position: absolute; left: calc(50% - 54px); top: calc(50% - 54px); width: 108px; height: 108px; display: grid; place-items: center; border: 2px solid rgba(18,100,220,.44); border-radius: 50%; color: var(--blue); background: rgba(18,100,220,.12); }
+.checkinRadius::after { content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 5px #fff; }
+.checkinRadius svg { opacity: 0; }
+.userDot { position: absolute; left: calc(50% - 9px); top: calc(50% - 9px); display: grid; place-items: center; color: var(--green); filter: drop-shadow(0 2px 3px rgba(0,0,0,.2)); transition: transform .25s ease; }
+.distancePill { position: absolute; left: 12px; bottom: 12px; padding: 7px 9px; border-radius: 5px; background: rgba(255,255,255,.92); color: #203049; font-size: 11px; font-weight: 800; }
+.mapStats { min-height: 45px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px; color: var(--muted); font-size: 11px; }
+.mapStats span { display: inline-flex; align-items: center; gap: 5px; }
+.decisionBox { margin: 14px; min-height: 78px; display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; padding: 14px; border-radius: 8px; border: 1px solid var(--line); }
+.decisionBox p { margin: 4px 0 0; color: var(--muted); line-height: 1.45; font-size: 12px; }
+.decisionBox.ready { color: var(--green); background: var(--green-soft); border-color: #b8dfd2; }
+.decisionBox.blocked, .decisionBox.permission { color: var(--coral); background: var(--coral-soft); border-color: #ecc4bf; }
+.decisionBox.accuracy { color: var(--amber); background: var(--amber-soft); border-color: #efd3a5; }
+.decisionBox.done { color: var(--blue); background: var(--blue-soft); border-color: #b7d1f2; }
+.scenarioTabs { margin: 14px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.scenarioTabs button { min-height: 34px; border: 1px solid #cbd8e8; border-radius: 6px; color: #526074; background: #fff; font-size: 10px; font-weight: 800; cursor: pointer; }
+.scenarioTabs button.active { color: #fff; border-color: var(--blue); background: var(--blue); }
+.privacyBox { padding: 13px; background: #f7f9fc; }
+.privacyBox label { display: grid; grid-template-columns: 18px 1fr; gap: 9px; align-items: start; color: #3b4b62; font-size: 11px; line-height: 1.5; }
+.privacyBox input { width: 16px; height: 16px; accent-color: var(--blue); }
+.stickyAction { position: sticky; bottom: 0; z-index: 5; display: grid; grid-template-columns: 1fr; gap: 8px; padding: 12px 14px 14px; background: rgba(255,255,255,.96); border-top: 1px solid var(--line); }
+.bigCheckinButton { width: 100%; height: 52px; font-size: 15px; }
+.manualButton { width: 100%; }
+.completeBox { display: grid; place-items: center; gap: 8px; padding: 24px 14px; color: var(--blue); background: var(--blue-soft); text-align: center; }
+.completeBox strong { font-size: 18px; }
+.completeBox p, .completeBox span { margin: 0; color: #4f6684; font-size: 12px; }
+.ownerSnapshot { padding: 20px; }
+.ownerSnapshot h2 { margin: 0 0 14px; font-size: 20px; }
+.ownerMetrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+.miniMetric { min-height: 76px; display: grid; align-content: center; gap: 6px; padding: 13px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; }
+.miniMetric span { color: var(--muted); font-size: 11px; }
+.miniMetric strong { font-size: 20px; }
+.ownerList { margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.ownerRow { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 14px; border-bottom: 1px solid #edf1f6; }
+.ownerRow:last-child { border-bottom: 0; }
+.ownerRow span { padding: 5px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.ownerRow .ok { color: var(--green); background: var(--green-soft); }
+.ownerRow .warn { color: var(--amber); background: var(--amber-soft); }
+.ownerRow .idle { color: #58687f; background: #eef2f7; }
+.ownerRow .danger { color: var(--coral); background: var(--coral-soft); }
+.manualHelp { margin-top: 16px; display: flex; align-items: flex-start; gap: 9px; padding: 13px; border: 1px solid #efd3a5; border-radius: 8px; color: var(--amber); background: var(--amber-soft); }
+.manualHelp p { margin: 0; color: #695033; line-height: 1.45; font-size: 12px; }
+.futureStack { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.futureStack span { display: inline-flex; align-items: center; gap: 5px; padding: 7px 9px; border-radius: 5px; color: #285075; background: var(--blue-soft); font-size: 11px; font-weight: 800; }
+
 @media (max-width: 900px) {
   .headerMain { height: 64px; gap: 16px; }
   .searchBox { width: auto; flex: 1; }
@@ -374,6 +437,8 @@ h1 { margin: 0; font-size: 32px; line-height: 1.25; letter-spacing: 0; }
   .verificationActions { grid-template-columns: 1fr; }
   .coordinateRow { align-items: flex-start; flex-direction: column; }
   .toast { width: calc(100% - 30px); justify-content: center; white-space: normal; text-align: center; }
+  .checkinShell { width: min(100% - 24px, 1180px); grid-template-columns: 1fr; padding-top: 18px; }
+  .ownerMetrics { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 420px) {
@@ -386,6 +451,11 @@ h1 { margin: 0; font-size: 32px; line-height: 1.25; letter-spacing: 0; }
   .metric { border-right: 0; }
   .metric:nth-child(odd) { border-right: 1px solid var(--line); }
   .metric:nth-child(3) { border-bottom: 0; }
+  .mockMap { height: 220px; }
+  .mapStats { align-items: flex-start; flex-direction: column; justify-content: center; padding: 9px 12px; }
+  .scenarioTabs { grid-template-columns: repeat(2, 1fr); }
+  .scenarioTabs button:last-child { grid-column: 1 / -1; }
+  .ownerSnapshot { padding: 14px; }
   .monthControl strong { min-width: 86px; }
   .todayButton { display: none; }
   .day { height: 60px; }

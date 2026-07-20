@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 type SiteHeaderProps = {
-  active: "예약슬롯" | "방문인증";
+  active: "예약슬롯" | "방문인증" | "자동체크인";
   notice: string;
 };
 
@@ -14,6 +14,7 @@ const navItems = [
   { label: "캠페인", href: "#" },
   { label: "예약슬롯", href: "/" },
   { label: "방문인증", href: "/visit-verification" },
+  { label: "자동체크인", href: "/auto-checkin" },
   { label: "후기회수", href: "#" },
   { label: "오늘오픈", href: "#" },
   { label: "파일럿", href: "#" },
