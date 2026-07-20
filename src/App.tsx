@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import "./App.css";
 import julseoLogo from "./assets/julseo-logo.png";
+import {
+  reviewNotificationMode,
+  sendReviewPublishedNotification
+} from "./services/reviewNotification";
+import type { NotificationChannel } from "./services/reviewNotification";
 
 type Campaign = {
   id: number;
@@ -48,6 +53,7 @@ type OwnerCampaignForm = {
 };
 
 type ReviewRecoveryStatus = "checkedIn" | "reminded" | "published" | "completed";
+type ReviewNotificationStatus = "idle" | "sending" | "sent" | "simulated" | "failed";
 
 type ReviewRecoveryItem = {
   id: number;
@@ -60,6 +66,13 @@ type ReviewRecoveryItem = {
   reminderCount: number;
   lastReminderAt: string;
   source: string;
+  reviewUrl?: string;
+  submittedAt?: string;
+  notificationChannel?: NotificationChannel;
+  notificationStatus?: ReviewNotificationStatus;
+  notificationSentAt?: string;
+  notificationDeliveryId?: string;
+  notificationFailureReason?: string;
 };
 
 type TodayOpenStatus = "open" | "closingSoon" | "scheduled";
@@ -401,7 +414,13 @@ const reviewRecoveryInitialItems: ReviewRecoveryItem[] = [
     reviewDueDate: "07.13 18:00",
     reminderCount: 1,
     lastReminderAt: "07.12 09:00",
-    source: "매장 QR"
+    source: "매장 QR",
+    reviewUrl: "https://blog.naver.com/example-review/223500000001",
+    submittedAt: "2026-07-13T09:20:00+09:00",
+    notificationChannel: "kakao",
+    notificationStatus: "simulated",
+    notificationSentAt: "2026-07-13T09:20:03+09:00",
+    notificationDeliveryId: "demo-existing-3"
   },
   {
     id: 4,
@@ -413,7 +432,13 @@ const reviewRecoveryInitialItems: ReviewRecoveryItem[] = [
     reviewDueDate: "07.12 18:00",
     reminderCount: 0,
     lastReminderAt: "-",
-    source: "QR + 운영자 확인"
+    source: "QR + 운영자 확인",
+    reviewUrl: "https://blog.naver.com/example-review/223500000002",
+    submittedAt: "2026-07-12T17:40:00+09:00",
+    notificationChannel: "email",
+    notificationStatus: "sent",
+    notificationSentAt: "2026-07-12T17:40:04+09:00",
+    notificationDeliveryId: "gmail-existing-4"
   },
   {
     id: 5,
@@ -429,6 +454,31 @@ const reviewRecoveryInitialItems: ReviewRecoveryItem[] = [
   }
 ];
 
+const notificationStatusLabels: Record<ReviewNotificationStatus, string> = {
+  idle: "알림 대기",
+  sending: "알림 전송 중",
+  sent: "알림 전송 완료",
+  simulated: "데모 알림 완료",
+  failed: "알림 실패"
+};
+
+const normalizeReviewUrl = (value: string) => {
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+};
+
+const formatNotificationTime = (value: string) =>
+  new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
 const reviewStatusLabels: Record<ReviewRecoveryStatus, string> = {
   checkedIn: "후기 대기",
   reminded: "리마인드 발송",
@@ -482,6 +532,11 @@ export default function App() {
   const [reviewItems, setReviewItems] = useState(reviewRecoveryInitialItems);
   const [reviewFilter, setReviewFilter] =
     useState<"all" | ReviewRecoveryStatus>("all");
+  const [reviewSubmissionId, setReviewSubmissionId] = useState(1);
+  const [reviewUrl, setReviewUrl] = useState("");
+  const [notificationPreference, setNotificationPreference] = useState<NotificationChannel>("kakao");
+  const [reviewSubmitMessage, setReviewSubmitMessage] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [todayOpenFilter, setTodayOpenFilter] = useState("전체");
   const [appliedTodayCampaignIds, setAppliedTodayCampaignIds] = useState<number[]>([]);
 
@@ -521,12 +576,19 @@ export default function App() {
     (item) => reviewFilter === "all" || item.status === reviewFilter
   );
 
+  const reviewSubmissionCandidates = reviewItems.filter(
+    (item) => item.status === "checkedIn" || item.status === "reminded"
+  );
+
   const reviewSummary = {
     checkedIn: reviewItems.length,
     waiting: reviewItems.filter((item) => item.status === "checkedIn").length,
     reminded: reviewItems.filter((item) => item.status === "reminded").length,
     recovered: reviewItems.filter(
       (item) => item.status === "published" || item.status === "completed"
+    ).length,
+    notified: reviewItems.filter((item) =>
+      item.notificationStatus === "sent" || item.notificationStatus === "simulated"
     ).length
   };
 
@@ -601,6 +663,125 @@ export default function App() {
   const handleApply = () => {
     setApplicationMessage(
       `${selectedCampaign.brandName} 캠페인 신청 준비가 완료되었습니다.`
+    );
+  };
+
+  const deliverReviewNotification = async (
+    item: ReviewRecoveryItem,
+    submittedReviewUrl: string,
+    preferredChannel: NotificationChannel
+  ): Promise<"sent" | "simulated" | "failed"> => {
+    if (!campaigns.some((entry) => entry.id === item.campaignId)) return "failed";
+
+    setReviewItems((current) =>
+      current.map((entry) =>
+        entry.id === item.id
+          ? {
+              ...entry,
+              notificationChannel: preferredChannel,
+              notificationStatus: "sending",
+              notificationFailureReason: ""
+            }
+          : entry
+      )
+    );
+
+    try {
+      const result = await sendReviewPublishedNotification({
+        campaignId: item.campaignId,
+        reviewId: item.id,
+        reviewUrl: submittedReviewUrl,
+        submittedAt: item.submittedAt ?? new Date().toISOString(),
+        preferredChannel,
+        fallbackChannel: preferredChannel === "kakao" ? "email" : "kakao"
+      });
+
+      setReviewItems((current) =>
+        current.map((entry) =>
+          entry.id === item.id
+            ? {
+                ...entry,
+                notificationChannel: result.channel,
+                notificationStatus: result.status,
+                notificationSentAt: result.sentAt,
+                notificationDeliveryId: result.deliveryId,
+                notificationFailureReason: ""
+              }
+            : entry
+        )
+      );
+      return result.status;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "알림 전송에 실패했습니다.";
+      setReviewItems((current) =>
+        current.map((entry) =>
+          entry.id === item.id
+            ? { ...entry, notificationStatus: "failed", notificationFailureReason: reason }
+            : entry
+        )
+      );
+      return "failed";
+    }
+  };
+
+  const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setReviewSubmitMessage("");
+
+    const normalizedUrl = normalizeReviewUrl(reviewUrl);
+    const item = reviewItems.find((entry) => entry.id === reviewSubmissionId);
+
+    if (!normalizedUrl) {
+      setReviewSubmitMessage("http 또는 https로 시작하는 올바른 후기 링크를 입력해주세요.");
+      return;
+    }
+    if (!item) {
+      setReviewSubmitMessage("후기를 등록할 체험단을 선택해주세요.");
+      return;
+    }
+    if (reviewItems.some((entry) => entry.id !== item.id && entry.reviewUrl === normalizedUrl)) {
+      setReviewSubmitMessage("이미 등록된 후기 링크입니다.");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    const submittedAt = new Date().toISOString();
+    const submittedItem: ReviewRecoveryItem = {
+      ...item,
+      status: "published",
+      reviewUrl: normalizedUrl,
+      submittedAt
+    };
+    setReviewItems((current) =>
+      current.map((entry) => (entry.id === item.id ? submittedItem : entry))
+    );
+
+    const result = await deliverReviewNotification(
+      submittedItem,
+      normalizedUrl,
+      notificationPreference
+    );
+    setReviewSubmitMessage(
+      result === "failed"
+        ? "후기는 등록됐지만 사장님 알림 전송에 실패했습니다. 목록에서 재시도해주세요."
+        : `후기 링크가 등록되고 사장님 ${result === "simulated" ? "데모 알림" : "알림"}이 전송됐습니다.`
+    );
+    const nextItem = reviewSubmissionCandidates.find((entry) => entry.id !== item.id);
+    if (nextItem) setReviewSubmissionId(nextItem.id);
+    setReviewUrl("");
+    setReviewFilter("all");
+    setIsSubmittingReview(false);
+  };
+
+  const retryReviewNotification = async (item: ReviewRecoveryItem) => {
+    if (!item.reviewUrl) return;
+    const result = await deliverReviewNotification(
+      item,
+      item.reviewUrl,
+      item.notificationChannel ?? notificationPreference
+    );
+    setReviewSubmitMessage(
+      result === "failed" ? "사장님 알림 재전송에 실패했습니다." : "사장님 알림을 다시 전송했습니다."
     );
   };
 
@@ -777,7 +958,7 @@ export default function App() {
       <main className="app review-page">
         <div className="notice-bar review-notice">
           <span>후기회수</span>
-          <strong>방문 인증된 체험단만 후기 요청과 리마인드를 관리합니다.</strong>
+          <strong>후기 링크 등록과 사장님 알림까지 한곳에서 자동화합니다.</strong>
         </div>
 
         <header className="review-header">
@@ -808,6 +989,80 @@ export default function App() {
             </div>
           </div>
 
+          <section className="review-automation" aria-label="후기 링크 등록과 사장님 알림">
+            <div className="review-automation-heading">
+              <div>
+                <p>체험단 후기 등록</p>
+                <h2>후기 링크를 등록하면 사장님께 자동으로 알려드려요</h2>
+                <span>방문 인증 완료 건만 등록되며, 같은 링크의 중복 등록은 차단됩니다.</span>
+              </div>
+              <span className={`notification-mode is-${reviewNotificationMode}`}>
+                알림 연동 · {reviewNotificationMode === "demo" ? "데모" : "실제 발송"}
+              </span>
+            </div>
+
+            <form className="review-submit-form" onSubmit={handleReviewSubmit}>
+              <label>
+                <span>체험단 / 캠페인</span>
+                <select
+                  value={reviewSubmissionId}
+                  onChange={(event) => setReviewSubmissionId(Number(event.target.value))}
+                  disabled={reviewSubmissionCandidates.length === 0}
+                >
+                  {reviewSubmissionCandidates.map((item) => {
+                    const campaign = campaigns.find((entry) => entry.id === item.campaignId);
+                    return (
+                      <option key={item.id} value={item.id}>
+                        {item.reviewerName} · {campaign?.brandName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              <label className="review-url-field">
+                <span>발행한 블로그 후기 링크</span>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://blog.naver.com/..."
+                  value={reviewUrl}
+                  onChange={(event) => setReviewUrl(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>사장님 알림</span>
+                <select
+                  value={notificationPreference}
+                  onChange={(event) =>
+                    setNotificationPreference(event.target.value as NotificationChannel)
+                  }
+                >
+                  <option value="kakao">카카오톡 우선 · 이메일 대체</option>
+                  <option value="email">이메일 우선 · 카카오톡 대체</option>
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={isSubmittingReview || reviewSubmissionCandidates.length === 0}
+              >
+                {isSubmittingReview ? "등록 및 알림 전송 중" : "후기 등록하고 알리기"}
+              </button>
+            </form>
+
+            {reviewSubmitMessage ? (
+              <p className="review-submit-message" role="status">
+                {reviewSubmitMessage}
+              </p>
+            ) : null}
+
+            <div className="review-automation-flow" aria-label="후기 알림 자동화 단계">
+              <span className="is-active">1 링크 등록</span>
+              <span>2 형식·중복 확인</span>
+              <span>3 사장님 알림</span>
+              <span>4 발송 기록</span>
+            </div>
+          </section>
+
           <div className="review-summary" aria-label="후기회수 요약">
             <article>
               <span>방문 인증</span>
@@ -828,6 +1083,11 @@ export default function App() {
               <span>회수 성과</span>
               <strong>{reviewSummary.recovered}</strong>
               <small>발행 또는 완료</small>
+            </article>
+            <article className="is-notified">
+              <span>사장님 알림</span>
+              <strong>{reviewSummary.notified}</strong>
+              <small>전송 또는 데모 완료</small>
             </article>
           </div>
 
@@ -859,7 +1119,7 @@ export default function App() {
                   <tr>
                     <th>체험단 / 캠페인</th>
                     <th>방문 인증</th>
-                    <th>후기 마감</th>
+                    <th>후기 링크 / 마감</th>
                     <th>리마인드</th>
                     <th>상태</th>
                     <th><span className="sr-only">관리</span></th>
@@ -883,7 +1143,25 @@ export default function App() {
                           <strong>{item.checkInAt}</strong>
                           <small>{item.source}</small>
                         </td>
-                        <td><strong>{item.reviewDueDate}</strong></td>
+                        <td>
+                          {item.reviewUrl ? (
+                            <a
+                              className="review-link"
+                              href={item.reviewUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              후기 열기
+                            </a>
+                          ) : (
+                            <strong>{item.reviewDueDate}</strong>
+                          )}
+                          <small>
+                            {item.submittedAt
+                              ? `${formatNotificationTime(item.submittedAt)} 등록`
+                              : "링크 미등록"}
+                          </small>
+                        </td>
                         <td>
                           <strong>{item.reminderCount}회</strong>
                           <small>{item.lastReminderAt}</small>
@@ -892,9 +1170,32 @@ export default function App() {
                           <span className={`review-status is-${item.status}`}>
                             {reviewStatusLabels[item.status]}
                           </span>
+                          {item.notificationStatus && item.notificationStatus !== "idle" ? (
+                            <small
+                              className={`notification-state is-${item.notificationStatus}`}
+                              title={item.notificationFailureReason}
+                            >
+                              {notificationStatusLabels[item.notificationStatus]}
+                              {item.notificationSentAt
+                                ? ` · ${formatNotificationTime(item.notificationSentAt)}`
+                                : ""}
+                            </small>
+                          ) : null}
                         </td>
                         <td>
-                          {item.status === "published" ? (
+                          {item.notificationStatus === "failed" ? (
+                            <button
+                              className="review-action is-retry"
+                              type="button"
+                              onClick={() => retryReviewNotification(item)}
+                            >
+                              알림 재시도
+                            </button>
+                          ) : item.notificationStatus === "sending" ? (
+                            <button className="review-action" type="button" disabled>
+                              전송 중
+                            </button>
+                          ) : item.status === "published" ? (
                             <button
                               className="review-action is-complete"
                               type="button"
@@ -927,29 +1228,6 @@ export default function App() {
   }
 
   if (currentView === "ownerRegistration") {
-
-  const sendReviewReminder = (reviewId: number) => {
-    setReviewItems((current) =>
-      current.map((item) =>
-        item.id === reviewId
-          ? {
-              ...item,
-              status: "reminded",
-              reminderCount: item.reminderCount + 1,
-              lastReminderAt: "방금 전"
-            }
-          : item
-      )
-    );
-  };
-
-  const completeReviewRecovery = (reviewId: number) => {
-    setReviewItems((current) =>
-      current.map((item) =>
-        item.id === reviewId ? { ...item, status: "completed" } : item
-      )
-    );
-  };
     return (
       <main className="app owner-page">
         <div className="notice-bar owner-notice">

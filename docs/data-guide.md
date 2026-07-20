@@ -67,6 +67,7 @@
 - `visitCheckIns`: QR·GPS 방문 인증 기록
 - `campaignReviews`: 발행 리뷰 또는 검수 대상 리뷰
 - `reviewReminders`: 후기 회수 리마인드
+- `reviewNotifications`: 후기 링크 등록 후 사장님에게 보낸 알림과 재시도 기록
 
 ### 공통 필드 이름
 
@@ -104,6 +105,13 @@
 - `reviewDueDate`: 후기 제출 마감일
 - `reminderCount`: 후기 리마인드 발송 횟수
 - `lastReminderAt`: 마지막 후기 리마인드 발송 시각
+- `reviewUrl`: 체험단이 등록한 발행 후기 URL
+- `submittedAt`: 후기 URL 등록 시각
+- `notificationChannel`: 사장님 알림 채널(`kakao` 또는 `email`)
+- `notificationStatus`: 알림 전송 상태
+- `notificationSentAt`: 마지막 알림 전송 시각
+- `notificationDeliveryId`: 알림 제공자의 전송 식별자
+- `notificationFailureReason`: 마지막 알림 실패 사유
 - `openAt`: 오늘오픈 캠페인 공개 시각
 - `remainingSlots`: 현재 신청 가능한 남은 자리
 - `openStatus`: 오늘오픈 공개 상태
@@ -143,6 +151,11 @@
 - `open`: 현재 신청 가능
 - `closingSoon`: 남은 자리가 적어 마감 임박
 - `scheduled`: 오늘 공개 예정
+
+- `sending`: 알림 전송 중
+- `sent`: 알림 전송 완료
+- `simulated`: 로컬 데모 알림 전송 완료
+- `failed`: 알림 전송 실패
 
 ## 데이터 모델 초안
 
@@ -283,9 +296,25 @@
 - `createdAt`
 - `updatedAt`
 
+### reviewNotifications
+
+- `id`
+- `campaignId`
+- `reviewId`
+- `companyId`
+- `reviewUrl`
+- `submittedAt`
+- `notificationChannel`
+- `notificationStatus`
+- `notificationSentAt`
+- `notificationDeliveryId`
+- `notificationFailureReason`
+- `createdAt`
+- `updatedAt`
+
 ## 최종 결정
 
-- 주요 컬렉션: `users`, `companies`, `ownerCampaignDrafts`, `bloggerProfiles`, `bloggerCampaigns`, `reservationSlots`, `campaignApplications`, `visitCheckIns`, `campaignReviews`, `reviewReminders`
+- 주요 컬렉션: `users`, `companies`, `ownerCampaignDrafts`, `bloggerProfiles`, `bloggerCampaigns`, `reservationSlots`, `campaignApplications`, `visitCheckIns`, `campaignReviews`, `reviewReminders`, `reviewNotifications`
 - 역할 기준: 기존 레포 역할 값 유지, 줄서 맥락으로 해석
 - 필드명 규칙: 영어 `camelCase`
 - 상태값 기준: 자유 텍스트가 아니라 정해진 값만 사용
@@ -301,3 +330,4 @@
 - 2026-07-13: 후기회수 관리 화면 기준으로 후기 작성자, 제출 마감일, 리마인드 횟수와 마지막 발송 시각 필드 보강
 - 2026-07-13: 최신 `main`의 `docs/PRD.md`를 최종 제품·DB 기준으로 지정하고 현재 프로토타입 모델의 마이그레이션 원칙 추가
 - 2026-07-13: 오늘오픈 페이지 기준으로 공개 시각, 남은 자리, 공개 상태 필드와 상태값 추가
+- 2026-07-20: 후기 URL 등록 후 카카오 알림톡·이메일 발송과 재시도 이력을 위한 `reviewNotifications` 및 알림 필드·상태값 추가
