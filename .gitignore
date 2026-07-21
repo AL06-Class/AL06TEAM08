@@ -1,10 +1,11 @@
 node_modules/
 dist/
+.vite/
+.firebase/
+.next/
+out/
 .env
 .env.*
 !.env.example
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+*.log
 .DS_Store
